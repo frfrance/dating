@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { CalendarDays, Heart, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 type MatchRow = {
@@ -42,7 +42,7 @@ export default async function ConnectPage() {
     redirect('/login')
   }
 
-  const { data, error } = await supabase.rpc('get_my_matches')
+  const { data: matchesData, error } = await supabase.rpc('get_my_matches')
 
   if (error) {
     return (
@@ -52,7 +52,15 @@ export default async function ConnectPage() {
     )
   }
 
-  const matches = (data || []) as MatchRow[]
+  const { data: likesCountData } = await supabase.rpc('get_likes_me_count')
+  const likesCount = Number(likesCountData || 0)
+
+  const { data: canSeeLikesData } = await supabase.rpc('can_current_user_see_who_liked')
+  const canSeeLikes = Boolean(canSeeLikesData)
+
+  const matches = (matchesData || []) as MatchRow[]
+
+  const likesHref = canSeeLikes ? '/likes-you' : '/upgrade'
 
   return (
     <div className="space-y-4">
@@ -62,6 +70,32 @@ export default async function ConnectPage() {
           Những người đã match thành công với bạn.
         </p>
       </div>
+
+      <Link
+        href={likesHref}
+        className="flex items-center justify-between rounded-3xl border border-pink-100 bg-pink-50 p-5 shadow-sm transition hover:bg-pink-100"
+      >
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-pink-500 p-3 text-white">
+            <Heart className="h-5 w-5 fill-current" />
+          </div>
+
+          <div>
+            <div className="text-lg font-bold text-gray-900">
+              Có {likesCount} người thích bạn
+            </div>
+            <div className="text-sm text-gray-600">
+              {canSeeLikes
+                ? 'Bấm để xem chi tiết những người đã thích bạn.'
+                : 'Bấm để mở khóa tính năng xem ai đã thích bạn.'}
+            </div>
+          </div>
+        </div>
+
+        <span className="text-sm font-medium text-pink-700">
+          {canSeeLikes ? 'Xem chi tiết' : 'Nâng cấp'}
+        </span>
+      </Link>
 
       {matches.length === 0 ? (
         <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-500 shadow-sm">
@@ -104,17 +138,14 @@ export default async function ConnectPage() {
                         <MapPin className="h-4 w-4 text-pink-500" />
                         <span>
                           {item.other_user_city || 'Chưa cập nhật thành phố'}
-                          {item.other_user_country
-                            ? `, ${item.other_user_country}`
-                            : ''}
+                          {item.other_user_country ? `, ${item.other_user_country}` : ''}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 text-pink-500" />
                         <span>
-                          Match ngày{' '}
-                          {new Date(item.matched_at).toLocaleDateString()}
+                          Match ngày {new Date(item.matched_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>

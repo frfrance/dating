@@ -10,6 +10,7 @@ type UserRow = {
   outgoing_intro_limit_mode: 'one_per_day' | 'many_per_day'
   outgoing_intro_daily_limit: number
   allow_intro_messages: boolean
+  can_see_who_likes_me: boolean
   is_admin: boolean
 }
 
@@ -42,6 +43,7 @@ export default function AdminUserOutgoingIntroTable({
         .update({
           outgoing_intro_limit_mode: row.outgoing_intro_limit_mode,
           outgoing_intro_daily_limit: finalLimit,
+          can_see_who_likes_me: row.can_see_who_likes_me,
           updated_at: new Date().toISOString(),
         })
         .eq('id', row.id)
@@ -59,9 +61,9 @@ export default function AdminUserOutgoingIntroTable({
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-gray-900">Quản lý quota gửi người lạ</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Chỉnh từng user được gửi 1 lời nhắn/ngày hay nhiều lời nhắn/ngày cho người lạ.
+        Chỉnh quyền gửi lời nhắn cho người lạ và quyền xem ai đã thích họ.
       </p>
 
       {message ? (
@@ -74,7 +76,7 @@ export default function AdminUserOutgoingIntroTable({
         {rows.map((row) => (
           <div
             key={row.id}
-            className="grid gap-4 rounded-2xl border border-gray-200 p-4 md:grid-cols-5"
+            className="grid gap-4 rounded-2xl border border-gray-200 p-4 md:grid-cols-6"
           >
             <div className="md:col-span-2">
               <div className="font-semibold text-gray-900">
@@ -124,6 +126,24 @@ export default function AdminUserOutgoingIntroTable({
                 disabled={row.outgoing_intro_limit_mode === 'one_per_day'}
                 className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-black disabled:bg-gray-100"
               />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Xem ai thích họ
+              </label>
+              <select
+                value={row.can_see_who_likes_me ? 'yes' : 'no'}
+                onChange={(e) =>
+                  updateRow(row.id, {
+                    can_see_who_likes_me: e.target.value === 'yes',
+                  })
+                }
+                className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-black"
+              >
+                <option value="no">Không</option>
+                <option value="yes">Có</option>
+              </select>
             </div>
 
             <div className="flex items-end">

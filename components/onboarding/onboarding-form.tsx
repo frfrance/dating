@@ -14,6 +14,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { getCitiesByCountryCode, getEuCountries } from '@/lib/location-data'
 import { SearchCombobox } from '@/components/ui/search-combobox'
+import { ONBOARDING_REQUIRED_FIELDS } from '@/lib/profile-extra-fields'
 
 type Profile = {
   id: string
@@ -37,6 +38,12 @@ type Profile = {
   avatar_url: string | null
   preferred_age_min?: number | null
   preferred_age_max?: number | null
+  extra_profile_data?: Record<string, string> | null
+}
+
+type OnboardingFormProps = {
+  profile: Profile
+  mode?: 'onboarding' | 'edit'
 }
 
 const AVATAR_BUCKET = 'avatars'
@@ -51,9 +58,13 @@ const ALLOWED_IMAGE_TYPES = [
   'image/heif',
 ]
 
-export default function OnboardingForm({ profile }: { profile: Profile }) {
+export default function OnboardingForm({
+  profile,
+  mode = 'onboarding',
+}: OnboardingFormProps) {
   const supabase = createClient()
   const router = useRouter()
+  const isEditMode = mode === 'edit'
 
   const euCountries = useMemo(() => getEuCountries(), [])
   const initialCountryCode =
@@ -87,8 +98,16 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
     profile.interests ? profile.interests.join(', ') : ''
   )
 
-  const [preferredAgeMin, setPreferredAgeMin] = useState(profile.preferred_age_min ?? 22)
-  const [preferredAgeMax, setPreferredAgeMax] = useState(profile.preferred_age_max ?? 35)
+  const [preferredAgeMin, setPreferredAgeMin] = useState(
+    profile.preferred_age_min ?? 22
+  )
+  const [preferredAgeMax, setPreferredAgeMax] = useState(
+    profile.preferred_age_max ?? 35
+  )
+
+  const [extraProfileData, setExtraProfileData] = useState<Record<string, string>>(
+    profile.extra_profile_data ?? {}
+  )
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url ?? '')
@@ -134,7 +153,9 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
       return
     }
 
-    const selectedCountry = euCountries.find((item) => item.code === searchCountryCode)
+    const selectedCountry = euCountries.find(
+      (item) => item.code === searchCountryCode
+    )
     setSearchCountry(selectedCountry?.name ?? '')
 
     setLoadingSearchCities(true)
@@ -171,6 +192,13 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
   function handleMaxAgeChange(value: number) {
     const nextMax = Math.max(value, preferredAgeMin)
     setPreferredAgeMax(nextMax)
+  }
+
+  function setExtraField(key: string, value: string) {
+    setExtraProfileData((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
   }
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -225,16 +253,24 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
     setError('')
     setSuccess('')
 
-    if (!avatarPreview && !avatarFile) return setError('Vui lòng chọn ảnh đại diện.')
+    if (!avatarPreview && !avatarFile) {
+      return setError('Vui lòng chọn ảnh đại diện.')
+    }
     if (!fullName.trim()) return setError('Vui lòng nhập tên.')
     if (!birthDate) return setError('Vui lòng chọn ngày sinh.')
     if (!gender) return setError('Vui lòng chọn giới tính.')
-    if (lookingFor.length === 0) return setError('Vui lòng chọn đối tượng bạn muốn gặp.')
+    if (lookingFor.length === 0) {
+      return setError('Vui lòng chọn đối tượng bạn muốn gặp.')
+    }
     if (!bio.trim()) return setError('Vui lòng nhập mô tả về bản thân.')
     if (!countryCode || !country) return setError('Vui lòng chọn quốc gia.')
     if (!city) return setError('Vui lòng chọn thành phố.')
-    if (!firstDateIdea.trim()) return setError('Vui lòng mô tả buổi hẹn đầu tiên mong muốn.')
-    if (!weekendHabit.trim()) return setError('Vui lòng mô tả cuối tuần bạn thường làm gì.')
+    if (!firstDateIdea.trim()) {
+      return setError('Vui lòng mô tả buổi hẹn đầu tiên mong muốn.')
+    }
+    if (!weekendHabit.trim()) {
+      return setError('Vui lòng mô tả cuối tuần bạn thường làm gì.')
+    }
 
     const interestsArray = interests
       .split(',')
@@ -245,7 +281,11 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
       return setError('Vui lòng nhập ít nhất 1 sở thích.')
     }
 
-    if (preferredAgeMin < 18 || preferredAgeMax > 60 || preferredAgeMin > preferredAgeMax) {
+    if (
+      preferredAgeMin < 18 ||
+      preferredAgeMax > 60 ||
+      preferredAgeMin > preferredAgeMax
+    ) {
       return setError('Khoảng tuổi kết nối không hợp lệ.')
     }
 
@@ -257,6 +297,13 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
       return setError('Vui lòng chọn thành phố bạn muốn tìm tình yêu.')
     }
 
+    for (const field of ONBOARDING_REQUIRED_FIELDS) {
+      const value = extraProfileData[field.key]
+      if (!value || value.trim() === '') {
+        return setError(`Vui lòng trả lời: ${field.label}`)
+      }
+    }
+
     try {
       setLoading(true)
 
@@ -264,7 +311,8 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
 
       const finalSearchCountryCode = searchCountryCode || countryCode
       const finalSearchCountry =
-        euCountries.find((item) => item.code === finalSearchCountryCode)?.name || country
+        euCountries.find((item) => item.code === finalSearchCountryCode)?.name ||
+        country
 
       const finalSearchMode = searchMode === 'city' && searchCity ? 'city' : 'country'
       const finalSearchCity = finalSearchMode === 'city' ? searchCity : null
@@ -290,6 +338,10 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
           interests: interestsArray,
           preferred_age_min: preferredAgeMin,
           preferred_age_max: preferredAgeMax,
+          extra_profile_data: {
+            ...(profile.extra_profile_data ?? {}),
+            ...extraProfileData,
+          },
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
         })
@@ -300,11 +352,20 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
         return
       }
 
-      setSuccess('Hoàn tất hồ sơ thành công.')
-      router.push('/profile')
+      setSuccess(
+        isEditMode ? 'Đã lưu thông tin cơ bản.' : 'Hoàn tất hồ sơ thành công.'
+      )
+
       router.refresh()
+
+      if (!isEditMode) {
+        router.push('/profile')
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Đã có lỗi xảy ra. Vui lòng thử lại.'
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Đã có lỗi xảy ra. Vui lòng thử lại.'
       setError(message)
     } finally {
       setLoading(false)
@@ -317,38 +378,42 @@ export default function OnboardingForm({ profile }: { profile: Profile }) {
   }))
 
   const cityOptions = useMemo(
-  () =>
-    cities.map((item) => ({
-      value: item.name,
-      label: item.name,
-    })),
-  [cities]
-)
+    () =>
+      cities.map((item) => ({
+        value: item.name,
+        label: item.name,
+      })),
+    [cities]
+  )
 
-const searchCityOptions = useMemo(
-  () =>
-    searchCities.map((item) => ({
-      value: item.name,
-      label: item.name,
-    })),
-  [searchCities]
-)
+  const searchCityOptions = useMemo(
+    () =>
+      searchCities.map((item) => ({
+        value: item.name,
+        label: item.name,
+      })),
+    [searchCities]
+  )
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-      <div className="inline-flex items-center gap-2 rounded-full bg-pink-100 px-4 py-2 text-sm font-medium text-pink-700">
-        <Sparkles className="h-4 w-4" />
-        Hoàn thiện hồ sơ của bạn
-      </div>
+      {!isEditMode ? (
+        <>
+          <div className="inline-flex items-center gap-2 rounded-full bg-pink-100 px-4 py-2 text-sm font-medium text-pink-700">
+            <Sparkles className="h-4 w-4" />
+            Hoàn thiện hồ sơ của bạn
+          </div>
 
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Tạo hồ sơ thật thu hút
-        </h2>
-        <p className="mt-2 text-base text-gray-600">
-          Hãy cho mọi người biết bạn là ai và bạn muốn kết nối với ai.
-        </p>
-      </div>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Tạo hồ sơ thật thu hút
+            </h2>
+            <p className="mt-2 text-base text-gray-600">
+              Hãy cho mọi người biết bạn là ai và bạn muốn kết nối với ai.
+            </p>
+          </div>
+        </>
+      ) : null}
 
       <section className="rounded-3xl border border-pink-100 bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -398,11 +463,13 @@ const searchCityOptions = useMemo(
               Tên hiển thị
             </label>
             <input
+              suppressHydrationWarning
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
               placeholder="Ví dụ: Anna"
+              autoComplete="name"
             />
           </div>
 
@@ -411,10 +478,12 @@ const searchCityOptions = useMemo(
               Ngày sinh
             </label>
             <input
+              suppressHydrationWarning
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
               className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
+              autoComplete="bday"
             />
           </div>
 
@@ -423,6 +492,7 @@ const searchCityOptions = useMemo(
               Giới tính
             </label>
             <select
+              suppressHydrationWarning
               value={gender}
               onChange={(e) => setGender(e.target.value)}
               className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
@@ -439,6 +509,7 @@ const searchCityOptions = useMemo(
               Mô tả về bản thân
             </label>
             <textarea
+              suppressHydrationWarning
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className="min-h-28 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
@@ -457,7 +528,7 @@ const searchCityOptions = useMemo(
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Quốc gia (EU Bằng Tiếng Anh)
+              Quốc gia (EU)
             </label>
             <SearchCombobox
               value={countryCode}
@@ -478,8 +549,14 @@ const searchCityOptions = useMemo(
               onChange={setCity}
               options={cityOptions}
               placeholder={!countryCode ? 'Chọn quốc gia trước' : 'Gõ để tìm thành phố...'}
-              searchPlaceholder={loadingCities ? 'Đang tải thành phố...' : 'Nhập tên thành phố...'}
-              emptyText={!countryCode ? 'Hãy chọn quốc gia trước.' : 'Không tìm thấy thành phố phù hợp.'}
+              searchPlaceholder={
+                loadingCities ? 'Đang tải thành phố...' : 'Nhập tên thành phố...'
+              }
+              emptyText={
+                !countryCode
+                  ? 'Hãy chọn quốc gia trước.'
+                  : 'Không tìm thấy thành phố phù hợp.'
+              }
               disabled={!countryCode || loadingCities}
             />
           </div>
@@ -532,7 +609,8 @@ const searchCityOptions = useMemo(
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
             <p className="mb-3 text-sm text-gray-700">
-              Nếu bạn để ở chế độ mặc định, hệ thống sẽ tìm trong toàn bộ quốc gia bạn đã chọn ở trên.
+              Nếu bạn để ở chế độ mặc định, hệ thống sẽ tìm trong toàn bộ quốc gia
+              bạn đã chọn ở trên.
             </p>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -566,14 +644,20 @@ const searchCityOptions = useMemo(
                       : 'Gõ để tìm thành phố...'
                   }
                   searchPlaceholder={
-                    loadingSearchCities ? 'Đang tải thành phố...' : 'Nhập tên thành phố...'
+                    loadingSearchCities
+                      ? 'Đang tải thành phố...'
+                      : 'Nhập tên thành phố...'
                   }
                   emptyText={
                     !searchCountryCode
                       ? 'Hãy chọn quốc gia trước.'
                       : 'Không tìm thấy thành phố phù hợp.'
                   }
-                  disabled={!searchCountryCode || loadingSearchCities || searchMode === 'country'}
+                  disabled={
+                    !searchCountryCode ||
+                    loadingSearchCities ||
+                    searchMode === 'country'
+                  }
                 />
               </div>
             </div>
@@ -589,7 +673,9 @@ const searchCityOptions = useMemo(
 
         <div className="space-y-5">
           <div>
-            <p className="mb-2 text-sm font-medium text-gray-700">Bạn muốn gặp ai?</p>
+            <p className="mb-2 text-sm font-medium text-gray-700">
+              Bạn muốn gặp ai?
+            </p>
             <div className="flex flex-wrap gap-3">
               {[
                 { value: 'male', label: 'Nam' },
@@ -671,6 +757,7 @@ const searchCityOptions = useMemo(
               Buổi hẹn đầu tiên lý tưởng
             </label>
             <textarea
+              suppressHydrationWarning
               value={firstDateIdea}
               onChange={(e) => setFirstDateIdea(e.target.value)}
               className="min-h-24 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
@@ -683,6 +770,7 @@ const searchCityOptions = useMemo(
               Cuối tuần bạn thường làm gì?
             </label>
             <textarea
+              suppressHydrationWarning
               value={weekendHabit}
               onChange={(e) => setWeekendHabit(e.target.value)}
               className="min-h-24 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
@@ -695,6 +783,7 @@ const searchCityOptions = useMemo(
               Sở thích (ngăn cách bằng dấu phẩy)
             </label>
             <input
+              suppressHydrationWarning
               type="text"
               value={interests}
               onChange={(e) => setInterests(e.target.value)}
@@ -702,6 +791,62 @@ const searchCityOptions = useMemo(
               placeholder="du lịch, nhiếp ảnh, gym"
             />
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-purple-100 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-4 text-sm font-semibold text-gray-700">
+          10 thông tin thêm để tăng tỷ lệ match
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {ONBOARDING_REQUIRED_FIELDS.map((field) => {
+            const value = extraProfileData[field.key] || ''
+
+            return (
+              <div
+                key={field.key}
+                className={field.type === 'textarea' ? 'md:col-span-2' : ''}
+              >
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  {field.label}
+                </label>
+
+                {field.type === 'select' ? (
+                  <select
+                    suppressHydrationWarning
+                    value={value}
+                    onChange={(e) => setExtraField(field.key, e.target.value)}
+                    className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
+                  >
+                    <option value="">Chọn câu trả lời</option>
+                    {field.options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === 'textarea' ? (
+                  <textarea
+                    suppressHydrationWarning
+                    value={value}
+                    onChange={(e) => setExtraField(field.key, e.target.value)}
+                    className="min-h-24 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
+                    placeholder={field.placeholder || ''}
+                  />
+                ) : (
+                  <input
+                    suppressHydrationWarning
+                    type="text"
+                    value={value}
+                    onChange={(e) => setExtraField(field.key, e.target.value)}
+                    className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none placeholder:text-gray-400 sm:rounded-2xl"
+                    placeholder={field.placeholder || ''}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </section>
 
@@ -722,7 +867,11 @@ const searchCityOptions = useMemo(
         disabled={loading}
         className="w-full rounded-2xl bg-pink-500 px-5 py-3 font-semibold text-white shadow-lg transition hover:bg-pink-600 disabled:opacity-60"
       >
-        {loading ? 'Đang lưu...' : 'Hoàn tất hồ sơ'}
+        {loading
+          ? 'Đang lưu...'
+          : isEditMode
+          ? 'Lưu thông tin cơ bản'
+          : 'Hoàn tất hồ sơ'}
       </button>
     </form>
   )

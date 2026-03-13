@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import OnboardingForm from '@/components/onboarding/onboarding-form'
 import ProfileGalleryEditor from '@/components/profile/profile-gallery-editor'
+import AdvancedProfileDetailsForm from '@/components/profile/advanced-profile-details-form'
 
 export default async function EditProfilePage() {
   const supabase = await createClient()
@@ -37,7 +38,11 @@ export default async function EditProfilePage() {
       interests,
       avatar_url,
       preferred_age_min,
-      preferred_age_max
+      preferred_age_max,
+      allow_intro_messages,
+      incoming_intro_limit_mode,
+      incoming_intro_daily_limit,
+      extra_profile_data
     `)
     .eq('id', user.id)
     .maybeSingle()
@@ -48,26 +53,40 @@ export default async function EditProfilePage() {
 
   const { data: photos, error: photosError } = await supabase
     .from('profile_photos')
-    .select('id, image_url, storage_path, sort_order')
+    .select('id, image_url, sort_order')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true })
 
   if (photosError) {
-    return <div className="text-red-600">Không tải được gallery ảnh phụ.</div>
+    return <div className="text-red-600">Không tải được thư viện ảnh.</div>
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Chỉnh sửa hồ sơ</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Chỉnh sửa hồ sơ</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Cập nhật thông tin cá nhân, khu vực bạn muốn kết nối và gallery ảnh phụ.
+          Cập nhật đầy đủ thông tin để tăng tỷ lệ match với người phù hợp hơn.
         </p>
       </div>
 
-      <OnboardingForm profile={profile} />
+      <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Thông tin cơ bản</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Cập nhật ảnh đại diện, bio, khu vực kết nối và các thông tin chính.
+          </p>
+        </div>
+
+        <OnboardingForm profile={profile} mode="edit" />
+      </div>
 
       <ProfileGalleryEditor userId={user.id} initialPhotos={photos || []} />
+
+      <AdvancedProfileDetailsForm
+        profileId={user.id}
+        initialData={profile.extra_profile_data}
+      />
     </div>
   )
 }

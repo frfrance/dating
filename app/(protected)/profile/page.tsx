@@ -1,8 +1,15 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Search, Sparkles } from 'lucide-react'
+import {
+  CalendarDays,
+  ChevronRight,
+  MapPin,
+  Search,
+  Sparkles,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import StrangerMessageSettingsForm from '@/components/settings/stranger-message-settings-form'
+import AdvancedProfileDetailsView from '@/components/profile/advanced-profile-details-view'
 
 function getAgeFromBirthDate(birthDate: string | null) {
   if (!birthDate) return null
@@ -19,6 +26,14 @@ function getAgeFromBirthDate(birthDate: string | null) {
 
   return age
 }
+
+const profileLinks = [
+  { href: '/report-issue', label: 'Báo cáo sự cố' },
+  { href: '/change-password', label: 'Đổi mật khẩu' },
+  { href: '/privacy-policy', label: 'Chính sách bảo mật' },
+  { href: '/terms-of-service', label: 'Điều khoản dịch vụ' },
+  { href: '/impressum', label: 'Impressum' },
+]
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -53,7 +68,8 @@ export default async function ProfilePage() {
       preferred_age_max,
       allow_intro_messages,
       incoming_intro_limit_mode,
-      incoming_intro_daily_limit
+      incoming_intro_daily_limit,
+      extra_profile_data
     `)
     .eq('id', user.id)
     .maybeSingle()
@@ -81,12 +97,17 @@ export default async function ProfilePage() {
                 alt={profile.full_name || 'Avatar'}
                 className="h-full w-full object-cover"
               />
-            ) : null}
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+                Chưa có ảnh
+              </div>
+            )}
           </div>
 
           <div className="mt-4 text-center">
             <h1 className="text-2xl font-bold text-gray-900">
-              {profile.full_name} {age ? `, ${age}` : ''}
+              {profile.full_name || 'Chưa cập nhật tên'}
+              {age ? `, ${age}` : ''}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               {profile.gender || 'Chưa cập nhật giới tính'}
@@ -97,14 +118,16 @@ export default async function ProfilePage() {
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-pink-500" />
               <span>
-                {profile.city}, {profile.country}
+                {profile.city || 'Chưa cập nhật thành phố'}
+                {profile.country ? `, ${profile.country}` : ''}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-pink-500" />
               <span>
-                Độ tuổi muốn kết nối: {profile.preferred_age_min} - {profile.preferred_age_max}
+                Độ tuổi muốn kết nối:{' '}
+                {profile.preferred_age_min ?? 18} - {profile.preferred_age_max ?? 60}
               </span>
             </div>
 
@@ -113,8 +136,8 @@ export default async function ProfilePage() {
               <span>
                 Tìm ở:{' '}
                 {profile.search_mode === 'city' && profile.search_city
-                  ? `${profile.search_city}, ${profile.search_country}`
-                  : `toàn bộ ${profile.search_country || profile.country}`}
+                  ? `${profile.search_city}, ${profile.search_country || profile.country || ''}`
+                  : `toàn bộ ${profile.search_country || profile.country || 'khu vực đã chọn'}`}
               </span>
             </div>
           </div>
@@ -173,20 +196,27 @@ export default async function ProfilePage() {
 
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">Bạn muốn gặp ai</h2>
-          <div className="flex flex-wrap gap-2">
-            {(profile.looking_for || []).map((item: string) => (
-              <span
-                key={item}
-                className="rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-700"
-              >
-                {item === 'male' ? 'Nam' : item === 'female' ? 'Nữ' : 'Cả hai'}
-              </span>
-            ))}
-          </div>
+
+          {(profile.looking_for || []).length === 0 ? (
+            <p className="text-sm text-gray-500">Chưa cập nhật.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(profile.looking_for || []).map((item: string) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-pink-100 px-3 py-1 text-sm font-medium text-pink-700"
+                >
+                  {item === 'male' ? 'Nam' : item === 'female' ? 'Nữ' : 'Cả hai'}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">Buổi hẹn đầu tiên lý tưởng</h2>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            Buổi hẹn đầu tiên lý tưởng
+          </h2>
           <p className="text-gray-700">{profile.first_date_idea || 'Chưa cập nhật.'}</p>
         </div>
 
@@ -197,14 +227,40 @@ export default async function ProfilePage() {
 
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">Sở thích</h2>
-          <div className="flex flex-wrap gap-2">
-            {(profile.interests || []).map((interest: string) => (
-              <span
-                key={interest}
-                className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+
+          {(profile.interests || []).length === 0 ? (
+            <p className="text-sm text-gray-500">Chưa cập nhật.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(profile.interests || []).map((interest: string) => (
+                <span
+                  key={interest}
+                  className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <AdvancedProfileDetailsView data={profile.extra_profile_data} />
+
+        <div className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="mb-2 px-2 text-lg font-semibold text-gray-900">
+            Hỗ trợ & pháp lý
+          </div>
+
+          <div className="divide-y divide-gray-100">
+            {profileLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center justify-between rounded-2xl px-3 py-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                {interest}
-              </span>
+                <span>{item.label}</span>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </Link>
             ))}
           </div>
         </div>

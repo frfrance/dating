@@ -28,8 +28,7 @@ export default function AuthLayout({
               </h2>
 
               <p className="mt-4 max-w-md text-sm leading-6 text-gray-600">
-                Tạo hồ sơ hẹn hò hiện đại với phong cách sáng, nhẹ nhàng và thân thiện
-                như một ứng dụng thật.
+                Hãy bắt đầu ngay với hành trình tìm nửa kia của mình.
               </p>
             </div>
 

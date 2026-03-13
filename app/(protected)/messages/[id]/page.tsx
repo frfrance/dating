@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ChatThread from '@/components/messages/chat-thread'
+import ChatUserActions from '@/components/messages/chat-user-actions'
 
 type OtherUserRow = {
   other_user_id: string
@@ -50,6 +51,10 @@ export default async function MessageThreadPage({
     ? (otherUserData[0] as OtherUserRow | undefined)
     : undefined
 
+  if (!otherUser) {
+    redirect('/messages')
+  }
+
   const { data: messages, error } = await supabase
     .from('messages')
     .select('id, conversation_id, sender_id, content, is_seen, created_at')
@@ -66,19 +71,11 @@ export default async function MessageThreadPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 rounded-3xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
-        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-pink-100">
-          {otherUser?.other_user_avatar_url ? (
-            <img
-              src={otherUser.other_user_avatar_url}
-              alt={displayName}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-sm font-semibold text-pink-700">
-              {displayName.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </div>
+        <ChatUserActions
+          otherUserId={otherUser.other_user_id}
+          otherUserName={displayName}
+          otherUserAvatarUrl={otherUser.other_user_avatar_url}
+        />
 
         <div>
           <div className="font-semibold text-gray-900">{displayName}</div>

@@ -32,6 +32,7 @@ export default async function AdminUsersPage() {
       outgoing_intro_limit_mode,
       outgoing_intro_daily_limit,
       allow_intro_messages,
+      can_see_who_likes_me,
       is_admin
     `)
     .order('created_at', { ascending: false })
