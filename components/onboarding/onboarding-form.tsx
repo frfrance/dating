@@ -50,6 +50,7 @@ type OnboardingFormProps = {
 
 const AVATAR_BUCKET = 'avatars'
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+const DEFAULT_COUNTRY_CODE = 'DE'
 
 const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',
@@ -69,17 +70,28 @@ export default function OnboardingForm({
   const isEditMode = mode === 'edit'
 
   const euCountries = useMemo(() => getEuCountries(), [])
-  const initialCountryCode =
+
+  const detectedCountryCode =
     profile.country_code ||
     euCountries.find((c) => c.name === (profile.country ?? ''))?.code ||
-    ''
+    DEFAULT_COUNTRY_CODE
+
+  const detectedSearchCountryCode =
+    profile.search_country_code ||
+    detectedCountryCode ||
+    DEFAULT_COUNTRY_CODE
 
   const [fullName, setFullName] = useState(profile.full_name ?? '')
   const [birthDate, setBirthDate] = useState(profile.birth_date ?? '')
   const [gender, setGender] = useState(profile.gender ?? '')
-  const [lookingFor, setLookingFor] = useState<string[]>(profile.looking_for ?? [])
+  const [lookingFor, setLookingFor] = useState<string[]>(
+    profile.looking_for && profile.looking_for.length > 0
+      ? profile.looking_for
+      : ['female']
+  )
   const [bio, setBio] = useState(profile.bio ?? '')
-  const [countryCode, setCountryCode] = useState(initialCountryCode)
+
+  const [countryCode, setCountryCode] = useState(detectedCountryCode)
   const [country, setCountry] = useState(profile.country ?? '')
   const [city, setCity] = useState(profile.city ?? '')
 
@@ -87,7 +99,7 @@ export default function OnboardingForm({
     profile.search_mode === 'city' ? 'city' : 'country'
   )
   const [searchCountryCode, setSearchCountryCode] = useState(
-    profile.search_country_code || initialCountryCode || ''
+    detectedSearchCountryCode
   )
   const [searchCountry, setSearchCountry] = useState(
     profile.search_country || profile.country || ''
@@ -125,15 +137,23 @@ export default function OnboardingForm({
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
+    const selectedCountry = euCountries.find((item) => item.code === countryCode)
+    setCountry(selectedCountry?.name ?? '')
+  }, [countryCode, euCountries])
+
+  useEffect(() => {
+    const selectedSearchCountry = euCountries.find(
+      (item) => item.code === searchCountryCode
+    )
+    setSearchCountry(selectedSearchCountry?.name ?? '')
+  }, [searchCountryCode, euCountries])
+
+  useEffect(() => {
     if (!countryCode) {
-      setCountry('')
       setCities([])
       setCity('')
       return
     }
-
-    const selectedCountry = euCountries.find((item) => item.code === countryCode)
-    setCountry(selectedCountry?.name ?? '')
 
     setLoadingCities(true)
     try {
@@ -147,20 +167,14 @@ export default function OnboardingForm({
     } finally {
       setLoadingCities(false)
     }
-  }, [countryCode, euCountries, city])
+  }, [countryCode, city])
 
   useEffect(() => {
     if (!searchCountryCode) {
-      setSearchCountry('')
       setSearchCities([])
       setSearchCity('')
       return
     }
-
-    const selectedCountry = euCountries.find(
-      (item) => item.code === searchCountryCode
-    )
-    setSearchCountry(selectedCountry?.name ?? '')
 
     setLoadingSearchCities(true)
     try {
@@ -174,13 +188,28 @@ export default function OnboardingForm({
     } finally {
       setLoadingSearchCities(false)
     }
-  }, [searchCountryCode, euCountries, searchCity])
+  }, [searchCountryCode, searchCity])
 
   useEffect(() => {
-    if (!searchCountryCode && countryCode) {
-      setSearchCountryCode(countryCode)
+    if (!profile.country && !profile.country_code) {
+      setCountryCode(DEFAULT_COUNTRY_CODE)
     }
-  }, [countryCode, searchCountryCode])
+
+    if (!profile.search_country && !profile.search_country_code) {
+      setSearchCountryCode(DEFAULT_COUNTRY_CODE)
+      setSearchMode('country')
+    }
+  }, [profile.country, profile.country_code, profile.search_country, profile.search_country_code])
+
+  function handleGenderChange(value: string) {
+    setGender(value)
+
+    if (value === 'male') {
+      setLookingFor(['female'])
+    } else if (value === 'female') {
+      setLookingFor(['male'])
+    }
+  }
 
   function toggleLookingFor(value: string) {
     setLookingFor((prev) =>
@@ -233,7 +262,6 @@ export default function OnboardingForm({
       })
 
       setAvatarFile(resizedFile)
-
       const previewUrl = URL.createObjectURL(resizedFile)
       setAvatarPreview(previewUrl)
     } catch (err) {
@@ -293,12 +321,8 @@ export default function OnboardingForm({
     setError('')
     setSuccess('')
 
-    if (!avatarPreview && !avatarFile) {
-      return setError('Vui lòng chọn ảnh đại diện.')
-    }
-
     if (!fullName.trim()) {
-      return setError('Vui lòng nhập tên.')
+      return setError('Vui lòng nhập tên hiển thị.')
     }
 
     if (!birthDate) {
@@ -309,38 +333,14 @@ export default function OnboardingForm({
       return setError('Vui lòng chọn giới tính.')
     }
 
-    if (lookingFor.length === 0) {
-      return setError('Vui lòng chọn đối tượng bạn muốn gặp.')
-    }
-
     if (!bio.trim()) {
       return setError('Vui lòng nhập mô tả về bản thân.')
-    }
-
-    if (!countryCode || !country) {
-      return setError('Vui lòng chọn quốc gia.')
-    }
-
-    if (!city) {
-      return setError('Vui lòng chọn thành phố.')
-    }
-
-    if (!firstDateIdea.trim()) {
-      return setError('Vui lòng mô tả buổi hẹn đầu tiên mong muốn.')
-    }
-
-    if (!weekendHabit.trim()) {
-      return setError('Vui lòng mô tả cuối tuần bạn thường làm gì.')
     }
 
     const interestsArray = interests
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-
-    if (interestsArray.length === 0) {
-      return setError('Vui lòng nhập ít nhất 1 sở thích.')
-    }
 
     if (
       preferredAgeMin < 18 ||
@@ -350,53 +350,41 @@ export default function OnboardingForm({
       return setError('Khoảng tuổi kết nối không hợp lệ.')
     }
 
-    if (!searchCountryCode) {
-      return setError('Vui lòng chọn nơi bạn muốn tìm tình yêu.')
-    }
-
-    if (searchMode === 'city' && !searchCity) {
-      return setError('Vui lòng chọn thành phố bạn muốn tìm tình yêu.')
-    }
-
-    for (const field of ONBOARDING_REQUIRED_FIELDS) {
-      const value = extraProfileData[field.key]
-      if (!value || value.trim() === '') {
-        return setError(`Vui lòng trả lời: ${field.label}`)
-      }
-    }
-
     try {
       setLoading(true)
 
       const { avatarUrl, avatarStoragePath } = await uploadAvatarIfNeeded()
 
-      const finalSearchCountryCode = searchCountryCode || countryCode
+      const finalSearchCountryCode = searchCountryCode || countryCode || DEFAULT_COUNTRY_CODE
       const finalSearchCountry =
         euCountries.find((item) => item.code === finalSearchCountryCode)?.name ||
-        country
+        country ||
+        'Germany'
 
-      const finalSearchMode = searchMode === 'city' && searchCity ? 'city' : 'country'
-      const finalSearchCity = finalSearchMode === 'city' ? searchCity : null
+      const finalSearchMode =
+        searchMode === 'city' && searchCity?.trim() ? 'city' : 'country'
+      const finalSearchCity =
+        finalSearchMode === 'city' ? searchCity.trim() : null
 
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName,
+          full_name: fullName.trim(),
           birth_date: birthDate,
           gender,
           looking_for: lookingFor,
-          bio,
+          bio: bio.trim(),
           country,
           country_code: countryCode,
-          city,
+          city: city || null,
           search_country: finalSearchCountry,
           search_country_code: finalSearchCountryCode,
           search_city: finalSearchCity,
           search_mode: finalSearchMode,
           avatar_url: avatarUrl,
           avatar_storage_path: avatarStoragePath,
-          first_date_idea: firstDateIdea,
-          weekend_habit: weekendHabit,
+          first_date_idea: firstDateIdea.trim() || null,
+          weekend_habit: weekendHabit.trim() || null,
           interests: interestsArray,
           preferred_age_min: preferredAgeMin,
           preferred_age_max: preferredAgeMax,
@@ -434,10 +422,7 @@ export default function OnboardingForm({
     }
   }
 
-  const countryOptions = euCountries.map((item) => ({
-    value: item.code,
-    label: `${item.flag ?? ''} ${item.name}`.trim(),
-  }))
+  const countryOptions = euCountries
 
   const cityOptions = useMemo(
     () =>
@@ -514,7 +499,7 @@ export default function OnboardingForm({
                 />
 
                 <p className="mt-2 text-xs text-gray-500">
-                  Hỗ trợ JPG, JPEG, PNG, WEBP, HEIC, HEIF. Tối đa 5MB.
+                  Ảnh đại diện là tùy chọn. Hỗ trợ JPG, JPEG, PNG, WEBP, HEIC, HEIF. Tối đa 5MB.
                 </p>
               </div>
             </div>
@@ -522,7 +507,7 @@ export default function OnboardingForm({
 
           <div className="md:col-span-2">
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Tên hiển thị
+              Tên hiển thị <span className="text-red-500">*</span>
             </label>
             <input
               suppressHydrationWarning
@@ -537,7 +522,7 @@ export default function OnboardingForm({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Ngày sinh
+              Ngày sinh <span className="text-red-500">*</span>
             </label>
             <input
               suppressHydrationWarning
@@ -551,12 +536,12 @@ export default function OnboardingForm({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Giới tính
+              Giới tính <span className="text-red-500">*</span>
             </label>
             <select
               suppressHydrationWarning
               value={gender}
-              onChange={(e) => setGender(e.target.value)}
+              onChange={(e) => handleGenderChange(e.target.value)}
               className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
             >
               <option value="">Chọn giới tính</option>
@@ -568,7 +553,7 @@ export default function OnboardingForm({
 
           <div className="md:col-span-2">
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Mô tả về bản thân
+              Mô tả về bản thân <span className="text-red-500">*</span>
             </label>
             <textarea
               suppressHydrationWarning
@@ -592,36 +577,56 @@ export default function OnboardingForm({
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
               Quốc gia (EU)
             </label>
-            <SearchCombobox
+            <select
               value={countryCode}
-              onChange={setCountryCode}
-              options={countryOptions}
-              placeholder="Gõ để tìm quốc gia..."
-              searchPlaceholder="Nhập tên quốc gia..."
-              emptyText="Không tìm thấy quốc gia."
-            />
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
+            >
+              {countryOptions.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.flag ? `${item.flag} ` : ''}{item.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Thành phố
-            </label>
-            <SearchCombobox
-              value={city}
-              onChange={setCity}
-              options={cityOptions}
-              placeholder={!countryCode ? 'Chọn quốc gia trước' : 'Gõ để tìm thành phố...'}
-              searchPlaceholder={
-                loadingCities ? 'Đang tải thành phố...' : 'Nhập tên thành phố...'
-              }
-              emptyText={
-                !countryCode
-                  ? 'Hãy chọn quốc gia trước.'
-                  : 'Không tìm thấy thành phố phù hợp.'
-              }
-              disabled={!countryCode || loadingCities}
-            />
-          </div>
+  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+    Thành phố
+  </label>
+
+  <SearchCombobox
+    value={city}
+    onChange={setCity}
+    options={cityOptions}
+    placeholder={!countryCode ? 'Chọn quốc gia trước' : 'Gõ để tìm thành phố...'}
+    searchPlaceholder={
+      loadingCities ? 'Đang tải thành phố...' : 'Nhập tên thành phố...'
+    }
+    emptyText={
+      !countryCode
+        ? 'Hãy chọn quốc gia trước.'
+        : 'Không tìm thấy thành phố phù hợp.'
+    }
+    disabled={!countryCode || loadingCities}
+  />
+
+  <div className="mt-2 flex items-center justify-between gap-3">
+    <p className="text-xs text-gray-500">
+      Có thể để trống nếu bạn chưa muốn chọn thành phố.
+    </p>
+
+    {city ? (
+      <button
+        type="button"
+        onClick={() => setCity('')}
+        className="text-xs font-medium text-pink-600 hover:text-pink-700"
+      >
+        Bỏ chọn thành phố
+      </button>
+    ) : null}
+  </div>
+</div>
         </div>
       </section>
 
@@ -637,8 +642,8 @@ export default function OnboardingForm({
               type="button"
               onClick={() => {
                 setSearchMode('country')
-                setSearchCountryCode(countryCode)
-                setSearchCountry(country)
+                setSearchCountryCode(countryCode || DEFAULT_COUNTRY_CODE)
+                setSearchCountry(country || 'Germany')
                 setSearchCity('')
               }}
               className={[
@@ -655,8 +660,6 @@ export default function OnboardingForm({
               type="button"
               onClick={() => {
                 setSearchMode('city')
-                setSearchCountryCode(countryCode)
-                setSearchCountry(country)
               }}
               className={[
                 'rounded-full px-4 py-2 text-sm font-medium transition',
@@ -671,8 +674,7 @@ export default function OnboardingForm({
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
             <p className="mb-3 text-sm text-gray-700">
-              Nếu bạn để ở chế độ mặc định, hệ thống sẽ tìm trong toàn bộ quốc gia
-              bạn đã chọn ở trên.
+              Nếu để trống thành phố tìm kiếm, hệ thống sẽ tìm trong toàn bộ quốc gia bạn chọn.
             </p>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -680,48 +682,62 @@ export default function OnboardingForm({
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Quốc gia tìm kiếm
                 </label>
-                <SearchCombobox
+                <select
                   value={searchCountryCode}
-                  onChange={setSearchCountryCode}
-                  options={countryOptions}
-                  placeholder="Gõ để tìm quốc gia..."
-                  searchPlaceholder="Nhập tên quốc gia..."
-                  emptyText="Không tìm thấy quốc gia."
-                />
+                  onChange={(e) => setSearchCountryCode(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-gray-300 bg-white px-4 text-black shadow-sm outline-none sm:rounded-2xl"
+                >
+                  {countryOptions.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.flag ? `${item.flag} ` : ''}{item.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Thành phố tìm kiếm
-                </label>
-                <SearchCombobox
-                  value={searchCity}
-                  onChange={setSearchCity}
-                  options={searchCityOptions}
-                  placeholder={
-                    !searchCountryCode
-                      ? 'Chọn quốc gia trước'
-                      : searchMode === 'country'
-                      ? 'Để trống để tìm toàn quốc gia'
-                      : 'Gõ để tìm thành phố...'
-                  }
-                  searchPlaceholder={
-                    loadingSearchCities
-                      ? 'Đang tải thành phố...'
-                      : 'Nhập tên thành phố...'
-                  }
-                  emptyText={
-                    !searchCountryCode
-                      ? 'Hãy chọn quốc gia trước.'
-                      : 'Không tìm thấy thành phố phù hợp.'
-                  }
-                  disabled={
-                    !searchCountryCode ||
-                    loadingSearchCities ||
-                    searchMode === 'country'
-                  }
-                />
-              </div>
+  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+    Thành phố tìm kiếm
+  </label>
+
+  <SearchCombobox
+    value={searchCity}
+    onChange={setSearchCity}
+    options={searchCityOptions}
+    placeholder={
+      !searchCountryCode
+        ? 'Chọn quốc gia trước'
+        : 'Để trống nếu muốn tìm toàn quốc gia'
+    }
+    searchPlaceholder={
+      loadingSearchCities
+        ? 'Đang tải thành phố...'
+        : 'Nhập tên thành phố...'
+    }
+    emptyText={
+      !searchCountryCode
+        ? 'Hãy chọn quốc gia trước.'
+        : 'Không tìm thấy thành phố phù hợp.'
+    }
+    disabled={!searchCountryCode || loadingSearchCities}
+  />
+
+  <div className="mt-2 flex items-center justify-between gap-3">
+    <p className="text-xs text-gray-500">
+      Nếu để trống, hệ thống sẽ tìm trong toàn bộ quốc gia đã chọn.
+    </p>
+
+    {searchCity ? (
+      <button
+        type="button"
+        onClick={() => setSearchCity('')}
+        className="text-xs font-medium text-blue-600 hover:text-blue-700"
+      >
+        Tìm toàn bộ quốc gia
+      </button>
+    ) : null}
+  </div>
+</div>
             </div>
           </div>
         </div>

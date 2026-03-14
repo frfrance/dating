@@ -108,24 +108,38 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-center">
-          <div className="grid w-full max-w-md gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border bg-neutral-50 p-4 shadow-sm">
-              <div className="aspect-[3/4] rounded-2xl bg-gradient-to-br from-pink-200 via-rose-100 to-white" />
-              <div className="mt-4">
-                <h3 className="font-semibold">Dung, 27</h3>
-                <p className="mt-1 text-sm text-neutral-600">Berlin · Art · Coffee · Travel</p>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border bg-neutral-50 p-4 shadow-sm sm:translate-y-8">
-              <div className="aspect-[3/4] rounded-2xl bg-gradient-to-br from-purple-200 via-fuchsia-100 to-white" />
-              <div className="mt-4">
-                <h3 className="font-semibold">Tuấn, 30</h3>
-                <p className="mt-1 text-sm text-neutral-600">Munich · Fitness · Music · Weekend Trips</p>
-              </div>
-            </div>
-          </div>
+  <div className="grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+    <div className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-5">
+        <div className="text-sm font-semibold text-pink-600">
+          Kết nối thật
         </div>
+        <h3 className="mt-2 text-xl font-bold text-neutral-900">
+          Tìm người phù hợp theo thành phố, quốc gia và độ tuổi
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-neutral-600">
+          Hệ thống giúp bạn khám phá những người phù hợp với nhu cầu kết nối,
+          vị trí mong muốn và phong cách sống của bạn.
+        </p>
+      </div>
+    </div>
+
+    <div className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:translate-y-8">
+      <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-sky-50 to-white p-5">
+        <div className="text-sm font-semibold text-blue-600">
+          An toàn & riêng tư
+        </div>
+        <h3 className="mt-2 text-xl font-bold text-neutral-900">
+          Nhắn tin, báo cáo và chặn người dùng ngay trong ứng dụng
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-neutral-600">
+          Bạn kiểm soát được trải nghiệm của mình với các tính năng bảo mật,
+          giới hạn nhắn tin và quản lý quyền riêng tư rõ ràng.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
