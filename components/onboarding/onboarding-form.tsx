@@ -1,5 +1,5 @@
 'use client'
-
+import { resizeImageFile } from '@/lib/image-resize'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -201,27 +201,41 @@ export default function OnboardingForm({
     }))
   }
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    setError('')
-    setSuccess('')
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0]
+  setError('')
+  setSuccess('')
 
-    if (!file) return
+  if (!file) return
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setError('Ảnh không hợp lệ. Hãy chọn JPG, PNG, WEBP, HEIC hoặc HEIF.')
-      return
-    }
-
-    if (file.size > MAX_AVATAR_SIZE) {
-      setError('Ảnh đại diện vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.')
-      return
-    }
-
-    setAvatarFile(file)
-    const previewUrl = URL.createObjectURL(file)
-    setAvatarPreview(previewUrl)
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    setError('Ảnh không hợp lệ. Hãy chọn JPG, PNG, WEBP, HEIC hoặc HEIF.')
+    return
   }
+
+  if (file.size > MAX_AVATAR_SIZE) {
+    setError('Ảnh đại diện vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.')
+    return
+  }
+
+  try {
+    const resizedFile = await resizeImageFile(file, {
+      maxWidth: 800,
+      maxHeight: 800,
+      quality: 0.82,
+      outputType: 'image/jpeg',
+    })
+
+    setAvatarFile(resizedFile)
+
+    const previewUrl = URL.createObjectURL(resizedFile)
+    setAvatarPreview(previewUrl)
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Không thể xử lý ảnh đại diện.'
+    setError(message)
+  }
+}
 
   async function uploadAvatarIfNeeded() {
     if (!avatarFile) return profile.avatar_url ?? null

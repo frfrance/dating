@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { resizeImageFile } from '@/lib/image-resize'
 
 type PhotoItem = {
   id: string
   image_url: string
-  storage_path: string
+  storage_path?: string | null
   sort_order: number
 }
 
@@ -18,6 +19,7 @@ type ProfileGalleryEditorProps = {
 
 const GALLERY_BUCKET = 'profile-photos'
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+const MAX_RESIZED_FILE_SIZE = 3 * 1024 * 1024
 const MAX_PHOTOS = 5
 
 const ALLOWED_IMAGE_TYPES = [
@@ -53,22 +55,26 @@ export default function ProfileGalleryEditor({
 
     if (photos.length >= MAX_PHOTOS) {
       setError(`Bạn chỉ có thể tải tối đa ${MAX_PHOTOS} ảnh phụ.`)
+      e.target.value = ''
       return
     }
 
     if (files.length > remainingSlots) {
       setError(`Bạn chỉ còn có thể thêm ${remainingSlots} ảnh.`)
+      e.target.value = ''
       return
     }
 
     for (const file of files) {
       if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
         setError('Có ảnh không hợp lệ. Hãy chọn JPG, PNG, WEBP, HEIC hoặc HEIF.')
+        e.target.value = ''
         return
       }
 
       if (file.size > MAX_FILE_SIZE) {
         setError('Có ảnh vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.')
+        e.target.value = ''
         return
       }
     }
@@ -79,16 +85,29 @@ export default function ProfileGalleryEditor({
       const uploadedItems: PhotoItem[] = []
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const filePath = `${userId}/photo-${Date.now()}-${i}.${fileExt}`
+        const originalFile = files[i]
+
+        const resizedFile = await resizeImageFile(originalFile, {
+          maxWidth: 1200,
+          maxHeight: 1600,
+          quality: 0.82,
+          outputType: 'image/jpeg',
+        })
+
+        if (resizedFile.size > MAX_RESIZED_FILE_SIZE) {
+          throw new Error(
+            'Ảnh sau khi tối ưu vẫn quá lớn. Vui lòng chọn ảnh khác nhỏ hơn.'
+          )
+        }
+
+        const filePath = `${userId}/photo-${Date.now()}-${i}.jpg`
 
         const { error: uploadError } = await supabase.storage
           .from(GALLERY_BUCKET)
-          .upload(filePath, file, {
+          .upload(filePath, resizedFile, {
             cacheControl: '3600',
             upsert: true,
-            contentType: file.type,
+            contentType: resizedFile.type,
           })
 
         if (uploadError) {
@@ -116,10 +135,12 @@ export default function ProfileGalleryEditor({
           throw new Error(`Lưu ảnh phụ thất bại: ${insertError.message}`)
         }
 
-        uploadedItems.push(insertedPhoto)
+        uploadedItems.push(insertedPhoto as PhotoItem)
       }
 
-      setPhotos((prev) => [...prev, ...uploadedItems].sort((a, b) => a.sort_order - b.sort_order))
+      setPhotos((prev) =>
+        [...prev, ...uploadedItems].sort((a, b) => a.sort_order - b.sort_order)
+      )
       setSuccess('Đã tải ảnh phụ thành công.')
       e.target.value = ''
     } catch (err) {
@@ -137,12 +158,14 @@ export default function ProfileGalleryEditor({
     try {
       setLoading(true)
 
-      const { error: storageError } = await supabase.storage
-        .from(GALLERY_BUCKET)
-        .remove([photo.storage_path])
+      if (photo.storage_path) {
+        const { error: storageError } = await supabase.storage
+          .from(GALLERY_BUCKET)
+          .remove([photo.storage_path])
 
-      if (storageError) {
-        throw new Error(`Xóa file ảnh thất bại: ${storageError.message}`)
+        if (storageError) {
+          throw new Error(`Xóa file ảnh thất bại: ${storageError.message}`)
+        }
       }
 
       const { error: dbError } = await supabase
@@ -164,13 +187,16 @@ export default function ProfileGalleryEditor({
 
       setPhotos(nextPhotos)
 
-      // cập nhật lại sort_order cho gọn
       for (const item of nextPhotos) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('profile_photos')
           .update({ sort_order: item.sort_order })
           .eq('id', item.id)
           .eq('user_id', userId)
+
+        if (updateError) {
+          throw new Error(`Cập nhật thứ tự ảnh thất bại: ${updateError.message}`)
+        }
       }
 
       setSuccess('Đã xóa ảnh phụ.')
@@ -188,7 +214,8 @@ export default function ProfileGalleryEditor({
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Ảnh phụ kiểu gallery</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Tối đa {MAX_PHOTOS} ảnh. Hỗ trợ JPG, PNG, WEBP, HEIC, HEIF. Mỗi ảnh tối đa 5MB.
+            Tối đa {MAX_PHOTOS} ảnh. Ảnh sẽ được tự động tối ưu để giảm dung lượng trước
+            khi tải lên.
           </p>
         </div>
 
@@ -212,7 +239,8 @@ export default function ProfileGalleryEditor({
         </label>
 
         <p className="mt-2 text-xs text-gray-500">
-          Mẹo: chọn ảnh rõ mặt, hoạt động hàng ngày, du lịch, sở thích để hồ sơ hấp dẫn hơn.
+          Mẹo: chọn ảnh rõ mặt, hoạt động hàng ngày, du lịch, sở thích để hồ sơ hấp
+          dẫn hơn.
         </p>
       </div>
 
@@ -255,7 +283,7 @@ export default function ProfileGalleryEditor({
                 type="button"
                 onClick={() => handleDeletePhoto(photo)}
                 disabled={loading}
-                className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-red-500 shadow hover:bg-white"
+                className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-red-500 shadow hover:bg-white disabled:opacity-60"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
