@@ -4,6 +4,13 @@ import OnboardingForm from '@/components/onboarding/onboarding-form'
 import ProfileGalleryEditor from '@/components/profile/profile-gallery-editor'
 import AdvancedProfileDetailsForm from '@/components/profile/advanced-profile-details-form'
 
+type GalleryPhotoItem = {
+  id: string
+  image_url: string
+  storage_path: string | null
+  sort_order: number
+}
+
 export default async function EditProfilePage() {
   const supabase = await createClient()
 
@@ -37,6 +44,7 @@ export default async function EditProfilePage() {
       weekend_habit,
       interests,
       avatar_url,
+      avatar_storage_path,
       preferred_age_min,
       preferred_age_max,
       allow_intro_messages,
@@ -52,14 +60,21 @@ export default async function EditProfilePage() {
   }
 
   const { data: photos, error: photosError } = await supabase
-  .from('profile_photos')
-  .select('id, image_url, sort_order, storage_path')
-  .eq('user_id', user.id)
-  .order('sort_order', { ascending: true })
+    .from('profile_photos')
+    .select('id, image_url, storage_path, sort_order')
+    .eq('user_id', user.id)
+    .order('sort_order', { ascending: true })
 
   if (photosError) {
     return <div className="text-red-600">Không tải được thư viện ảnh.</div>
   }
+
+  const safePhotos: GalleryPhotoItem[] = (photos || []).map((photo) => ({
+    id: photo.id,
+    image_url: photo.image_url,
+    storage_path: photo.storage_path,
+    sort_order: photo.sort_order,
+  }))
 
   return (
     <div className="space-y-6">
@@ -81,7 +96,7 @@ export default async function EditProfilePage() {
         <OnboardingForm profile={profile} mode="edit" />
       </div>
 
-      <ProfileGalleryEditor userId={user.id} initialPhotos={photos || []} />
+      <ProfileGalleryEditor userId={user.id} initialPhotos={safePhotos} />
 
       <AdvancedProfileDetailsForm
         profileId={user.id}

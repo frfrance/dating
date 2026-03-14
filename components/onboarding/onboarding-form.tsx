@@ -1,5 +1,5 @@
 'use client'
-import { resizeImageFile } from '@/lib/image-resize'
+
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -11,6 +11,7 @@ import {
   UserRound,
 } from 'lucide-react'
 
+import { resizeImageFile } from '@/lib/image-resize'
 import { createClient } from '@/lib/supabase/client'
 import { getCitiesByCountryCode, getEuCountries } from '@/lib/location-data'
 import { SearchCombobox } from '@/components/ui/search-combobox'
@@ -36,6 +37,7 @@ type Profile = {
   weekend_habit: string | null
   interests: string[] | null
   avatar_url: string | null
+  avatar_storage_path?: string | null
   preferred_age_min?: number | null
   preferred_age_max?: number | null
   extra_profile_data?: Record<string, string> | null
@@ -139,7 +141,9 @@ export default function OnboardingForm({
       setCities(cityList)
 
       const stillExists = cityList.some((item) => item.name === city)
-      if (!stillExists) setCity('')
+      if (!stillExists) {
+        setCity('')
+      }
     } finally {
       setLoadingCities(false)
     }
@@ -164,7 +168,9 @@ export default function OnboardingForm({
       setSearchCities(cityList)
 
       const stillExists = cityList.some((item) => item.name === searchCity)
-      if (!stillExists) setSearchCity('')
+      if (!stillExists) {
+        setSearchCity('')
+      }
     } finally {
       setLoadingSearchCities(false)
     }
@@ -202,50 +208,55 @@ export default function OnboardingForm({
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0]
-  setError('')
-  setSuccess('')
+    const file = e.target.files?.[0]
+    setError('')
+    setSuccess('')
 
-  if (!file) return
+    if (!file) return
 
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    setError('Ảnh không hợp lệ. Hãy chọn JPG, PNG, WEBP, HEIC hoặc HEIF.')
-    return
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError('Ảnh không hợp lệ. Hãy chọn JPG, PNG, WEBP, HEIC hoặc HEIF.')
+      return
+    }
+
+    if (file.size > MAX_AVATAR_SIZE) {
+      setError('Ảnh đại diện vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.')
+      return
+    }
+
+    try {
+      const resizedFile = await resizeImageFile(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.82,
+        outputType: 'image/jpeg',
+      })
+
+      setAvatarFile(resizedFile)
+
+      const previewUrl = URL.createObjectURL(resizedFile)
+      setAvatarPreview(previewUrl)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Không thể xử lý ảnh đại diện.'
+      setError(message)
+    }
   }
-
-  if (file.size > MAX_AVATAR_SIZE) {
-    setError('Ảnh đại diện vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.')
-    return
-  }
-
-  try {
-    const resizedFile = await resizeImageFile(file, {
-      maxWidth: 800,
-      maxHeight: 800,
-      quality: 0.82,
-      outputType: 'image/jpeg',
-    })
-
-    setAvatarFile(resizedFile)
-
-    const previewUrl = URL.createObjectURL(resizedFile)
-    setAvatarPreview(previewUrl)
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'Không thể xử lý ảnh đại diện.'
-    setError(message)
-  }
-}
 
   async function uploadAvatarIfNeeded() {
-    if (!avatarFile) return profile.avatar_url ?? null
+    if (!avatarFile) {
+      return {
+        avatarUrl: profile.avatar_url ?? null,
+        avatarStoragePath: profile.avatar_storage_path ?? null,
+      }
+    }
 
     const fileExt = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const filePath = `${profile.id}/avatar-${Date.now()}.${fileExt}`
+    const newFilePath = `${profile.id}/avatar-${Date.now()}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from(AVATAR_BUCKET)
-      .upload(filePath, avatarFile, {
+      .upload(newFilePath, avatarFile, {
         cacheControl: '3600',
         upsert: true,
         contentType: avatarFile.type,
@@ -257,9 +268,24 @@ export default function OnboardingForm({
 
     const { data: publicUrlData } = supabase.storage
       .from(AVATAR_BUCKET)
-      .getPublicUrl(filePath)
+      .getPublicUrl(newFilePath)
 
-    return publicUrlData.publicUrl
+    const oldAvatarStoragePath = profile.avatar_storage_path ?? null
+
+    if (oldAvatarStoragePath && oldAvatarStoragePath !== newFilePath) {
+      const { error: removeError } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .remove([oldAvatarStoragePath])
+
+      if (removeError) {
+        console.error('Không thể xóa ảnh đại diện cũ:', removeError.message)
+      }
+    }
+
+    return {
+      avatarUrl: publicUrlData.publicUrl,
+      avatarStoragePath: newFilePath,
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -270,18 +296,39 @@ export default function OnboardingForm({
     if (!avatarPreview && !avatarFile) {
       return setError('Vui lòng chọn ảnh đại diện.')
     }
-    if (!fullName.trim()) return setError('Vui lòng nhập tên.')
-    if (!birthDate) return setError('Vui lòng chọn ngày sinh.')
-    if (!gender) return setError('Vui lòng chọn giới tính.')
+
+    if (!fullName.trim()) {
+      return setError('Vui lòng nhập tên.')
+    }
+
+    if (!birthDate) {
+      return setError('Vui lòng chọn ngày sinh.')
+    }
+
+    if (!gender) {
+      return setError('Vui lòng chọn giới tính.')
+    }
+
     if (lookingFor.length === 0) {
       return setError('Vui lòng chọn đối tượng bạn muốn gặp.')
     }
-    if (!bio.trim()) return setError('Vui lòng nhập mô tả về bản thân.')
-    if (!countryCode || !country) return setError('Vui lòng chọn quốc gia.')
-    if (!city) return setError('Vui lòng chọn thành phố.')
+
+    if (!bio.trim()) {
+      return setError('Vui lòng nhập mô tả về bản thân.')
+    }
+
+    if (!countryCode || !country) {
+      return setError('Vui lòng chọn quốc gia.')
+    }
+
+    if (!city) {
+      return setError('Vui lòng chọn thành phố.')
+    }
+
     if (!firstDateIdea.trim()) {
       return setError('Vui lòng mô tả buổi hẹn đầu tiên mong muốn.')
     }
+
     if (!weekendHabit.trim()) {
       return setError('Vui lòng mô tả cuối tuần bạn thường làm gì.')
     }
@@ -321,7 +368,7 @@ export default function OnboardingForm({
     try {
       setLoading(true)
 
-      const avatarUrl = await uploadAvatarIfNeeded()
+      const { avatarUrl, avatarStoragePath } = await uploadAvatarIfNeeded()
 
       const finalSearchCountryCode = searchCountryCode || countryCode
       const finalSearchCountry =
@@ -347,6 +394,7 @@ export default function OnboardingForm({
           search_city: finalSearchCity,
           search_mode: finalSearchMode,
           avatar_url: avatarUrl,
+          avatar_storage_path: avatarStoragePath,
           first_date_idea: firstDateIdea,
           weekend_habit: weekendHabit,
           interests: interestsArray,

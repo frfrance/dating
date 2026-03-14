@@ -107,7 +107,25 @@ export default function HomePage() {
           </div>
         </div>
 
-        
+        <div className="flex items-center justify-center">
+          <div className="grid w-full max-w-md gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border bg-neutral-50 p-4 shadow-sm">
+              <div className="aspect-[3/4] rounded-2xl bg-gradient-to-br from-pink-200 via-rose-100 to-white" />
+              <div className="mt-4">
+                <h3 className="font-semibold">Dung, 27</h3>
+                <p className="mt-1 text-sm text-neutral-600">Berlin · Art · Coffee · Travel</p>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border bg-neutral-50 p-4 shadow-sm sm:translate-y-8">
+              <div className="aspect-[3/4] rounded-2xl bg-gradient-to-br from-purple-200 via-fuchsia-100 to-white" />
+              <div className="mt-4">
+                <h3 className="font-semibold">Tuấn, 30</h3>
+                <p className="mt-1 text-sm text-neutral-600">Munich · Fitness · Music · Weekend Trips</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

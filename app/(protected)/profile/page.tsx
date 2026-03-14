@@ -11,6 +11,12 @@ import { createClient } from '@/lib/supabase/server'
 import StrangerMessageSettingsForm from '@/components/settings/stranger-message-settings-form'
 import AdvancedProfileDetailsView from '@/components/profile/advanced-profile-details-view'
 
+type ProfilePhoto = {
+  id: string
+  image_url: string
+  sort_order: number
+}
+
 function getAgeFromBirthDate(birthDate: string | null) {
   if (!birthDate) return null
 
@@ -61,6 +67,7 @@ export default async function ProfilePage() {
       search_mode,
       looking_for,
       avatar_url,
+      avatar_storage_path,
       first_date_idea,
       weekend_habit,
       interests,
@@ -83,6 +90,12 @@ export default async function ProfilePage() {
     .select('id, image_url, sort_order')
     .eq('user_id', user.id)
     .order('sort_order', { ascending: true })
+
+  const safePhotos: ProfilePhoto[] = (photos || []).map((photo) => ({
+    id: photo.id,
+    image_url: photo.image_url,
+    sort_order: photo.sort_order,
+  }))
 
   const age = getAgeFromBirthDate(profile.birth_date)
 
@@ -172,11 +185,11 @@ export default async function ProfilePage() {
         <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold text-gray-900">Ảnh phụ</h2>
 
-          {!photos || photos.length === 0 ? (
+          {safePhotos.length === 0 ? (
             <p className="text-sm text-gray-500">Bạn chưa thêm ảnh phụ nào.</p>
           ) : (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              {photos.map((photo) => (
+              {safePhotos.map((photo) => (
                 <div
                   key={photo.id}
                   className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm"
