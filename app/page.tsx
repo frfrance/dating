@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import InstallAppButton from '@/components/pwa/install-app-button'
+import { createClient } from '@/lib/supabase/server'
+
 const features = [
   {
     title: 'Không Lộ Liên Kết Mạng Xã Hội',
@@ -36,34 +39,62 @@ const safetyItems = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const isLoggedIn = !!user
+
   return (
     <main className="min-h-screen bg-white text-neutral-900">
       <section className="border-b">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/discover" className="flex items-center">
-          <Image
-            src="/favicon.ico"
-            alt="Logo"
-            width={36}
-            height={36}
-            className="rounded-md"
-          />
-        </Link>
+          <Link href={isLoggedIn ? '/discover' : '/'} className="flex items-center">
+            <Image
+              src="/favicon.ico"
+              alt="Logo"
+              width={36}
+              height={36}
+              className="rounded-md"
+            />
+          </Link>
 
           <nav className="hidden items-center gap-6 md:flex">
             <Link href="/about" className="text-sm text-neutral-600 hover:text-black">
               Giới thiệu
             </Link>
-            <Link href="/login" className="text-sm text-neutral-600 hover:text-black">
-              Đăng nhập
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
-            >
-              Bắt đầu
-            </Link>
+
+            {isLoggedIn ? (
+              <>
+                <Link href="/discover" className="text-sm text-neutral-600 hover:text-black">
+                  Khám phá
+                </Link>
+                <Link href="/connect" className="text-sm text-neutral-600 hover:text-black">
+                  Kết nối
+                </Link>
+                <Link href="/profile" className="text-sm text-neutral-600 hover:text-black">
+                  Hồ sơ
+                </Link>
+                <Link href="/messages" className="text-sm text-neutral-600 hover:text-black">
+                  Tin nhắn
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-neutral-600 hover:text-black">
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white"
+                >
+                  Bắt đầu
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </section>
@@ -75,7 +106,7 @@ export default function HomePage() {
           </span>
 
           <h1 className="max-w-2xl text-4xl font-bold leading-tight sm:text-5xl">
-            Ẩnh Danh, Tin Nhắn Mã Hoá 2 Chiều. Bộ Lọc Và Các Công Cụ Tuyệt Vời Khác
+            Ẩn Danh, Tin Nhắn Mã Hoá 2 Chiều. Bộ Lọc Và Các Công Cụ Tuyệt Vời Khác
           </h1>
 
           <p className="mt-5 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg">
@@ -85,18 +116,41 @@ export default function HomePage() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-medium text-white"
-            >
-              Tạo tài khoản
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-medium"
-            >
-              Đăng nhập
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/discover"
+                  className="inline-flex items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-medium text-white"
+                >
+                  Khám phá
+                </Link>
+                <Link
+                  href="/messages"
+                  className="inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-medium"
+                >
+                  Tin nhắn
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-medium text-white"
+                >
+                  Tạo tài khoản
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-medium"
+                >
+                  Đăng nhập
+                </Link>
+              </>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <InstallAppButton />
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm text-neutral-600">
@@ -108,38 +162,38 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-center">
-  <div className="grid w-full max-w-2xl gap-4 sm:grid-cols-2">
-    <div className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm">
-      <div className="rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-5">
-        <div className="text-sm font-semibold text-pink-600">
-          Kết nối thật
-        </div>
-        <h3 className="mt-2 text-xl font-bold text-neutral-900">
-          Tìm người phù hợp theo thành phố, quốc gia và độ tuổi
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-neutral-600">
-          Hệ thống giúp bạn khám phá những người phù hợp với nhu cầu kết nối,
-          vị trí mong muốn và phong cách sống của bạn.
-        </p>
-      </div>
-    </div>
+          <div className="grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-5">
+                <div className="text-sm font-semibold text-pink-600">
+                  Kết nối thật
+                </div>
+                <h3 className="mt-2 text-xl font-bold text-neutral-900">
+                  Tìm người phù hợp theo thành phố, quốc gia và độ tuổi
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-600">
+                  Hệ thống giúp bạn khám phá những người phù hợp với nhu cầu kết nối,
+                  vị trí mong muốn và phong cách sống của bạn.
+                </p>
+              </div>
+            </div>
 
-    <div className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:translate-y-8">
-      <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-sky-50 to-white p-5">
-        <div className="text-sm font-semibold text-blue-600">
-          An toàn & riêng tư
+            <div className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:translate-y-8">
+              <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-sky-50 to-white p-5">
+                <div className="text-sm font-semibold text-blue-600">
+                  An toàn & riêng tư
+                </div>
+                <h3 className="mt-2 text-xl font-bold text-neutral-900">
+                  Nhắn tin, báo cáo và chặn người dùng ngay trong ứng dụng
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-600">
+                  Bạn kiểm soát được trải nghiệm của mình với các tính năng bảo mật,
+                  giới hạn nhắn tin và quản lý quyền riêng tư rõ ràng.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-        <h3 className="mt-2 text-xl font-bold text-neutral-900">
-          Nhắn tin, báo cáo và chặn người dùng ngay trong ứng dụng
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-neutral-600">
-          Bạn kiểm soát được trải nghiệm của mình với các tính năng bảo mật,
-          giới hạn nhắn tin và quản lý quyền riêng tư rõ ràng.
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -195,18 +249,37 @@ export default function HomePage() {
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-medium text-black"
-            >
-              Đăng ký miễn phí
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white"
-            >
-              Tôi đã có tài khoản
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/discover"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-medium text-black"
+                >
+                  Khám phá ngay
+                </Link>
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white"
+                >
+                  Hồ sơ của tôi
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-medium text-black"
+                >
+                  Đăng ký miễn phí
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white"
+                >
+                  Tôi đã có tài khoản
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -214,11 +287,22 @@ export default function HomePage() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-neutral-600 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>© 2026 henho.eu Hẹn Hò Tại Châu Âu.</p>
-          <div className="flex gap-4">
-            <Link href="/about">Giới thiệu</Link>
-            <Link href="/login">Đăng nhập</Link>
-            <Link href="/signup">Đăng ký</Link>
-          </div>
+
+          {isLoggedIn ? (
+            <div className="flex gap-4">
+              <Link href="/about">Giới thiệu</Link>
+              <Link href="/discover">Khám phá</Link>
+              <Link href="/connect">Kết nối</Link>
+              <Link href="/profile">Hồ sơ</Link>
+              <Link href="/messages">Tin nhắn</Link>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <Link href="/about">Giới thiệu</Link>
+              <Link href="/login">Đăng nhập</Link>
+              <Link href="/signup">Đăng ký</Link>
+            </div>
+          )}
         </div>
       </footer>
     </main>
