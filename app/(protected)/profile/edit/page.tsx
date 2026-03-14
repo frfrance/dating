@@ -52,10 +52,10 @@ export default async function EditProfilePage() {
   }
 
   const { data: photos, error: photosError } = await supabase
-    .from('profile_photos')
-    .select('id, image_url, sort_order')
-    .eq('user_id', user.id)
-    .order('sort_order', { ascending: true })
+  .from('profile_photos')
+  .select('id, image_url, sort_order, storage_path')
+  .eq('user_id', user.id)
+  .order('sort_order', { ascending: true })
 
   if (photosError) {
     return <div className="text-red-600">Không tải được thư viện ảnh.</div>
