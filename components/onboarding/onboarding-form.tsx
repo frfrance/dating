@@ -832,7 +832,7 @@ export default function OnboardingForm({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Buổi hẹn đầu tiên lý tưởng
+              Buổi hẹn đầu tiên sẽ như thế nào?
             </label>
             <textarea
               suppressHydrationWarning
