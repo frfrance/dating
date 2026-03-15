@@ -18,24 +18,13 @@ export type FeedPostRow = {
   created_at: string
 }
 
-type RawFeedProfileRow = {
+type CurrentUserRow = {
+  id: string
   full_name: string | null
   avatar_url: string | null
   is_vip: boolean | null
-}
-
-type RawFeedPostRow = {
-  id: string
-  user_id: string
-  content: string | null
-  image_url: string | null
-  status: string
-  report_count: number | null
-  like_count: number | null
-  comment_count: number | null
-  is_hidden_by_admin: boolean | null
-  created_at: string
-  profiles: RawFeedProfileRow[] | null
+  can_create_feed_posts: boolean | null
+  daily_feed_post_limit: number | null
 }
 
 export default async function FeedPage() {
@@ -51,32 +40,13 @@ export default async function FeedPage() {
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, is_vip, can_create_feed_posts, daily_feed_post_limit')
+    .select(
+      'id, full_name, avatar_url, is_vip, can_create_feed_posts, daily_feed_post_limit'
+    )
     .eq('id', user.id)
     .maybeSingle()
 
-  const { data: posts, error } = await supabase
-    .from('feed_posts')
-    .select(`
-      id,
-      user_id,
-      content,
-      image_url,
-      status,
-      report_count,
-      like_count,
-      comment_count,
-      is_hidden_by_admin,
-      created_at,
-      profiles!feed_posts_user_id_fkey (
-        full_name,
-        avatar_url,
-        is_vip
-      )
-    `)
-    .eq('status', 'approved')
-    .eq('is_hidden_by_admin', false)
-    .order('created_at', { ascending: false })
+  const { data: posts, error } = await supabase.rpc('get_feed_posts')
 
   if (error) {
     return (
@@ -86,27 +56,26 @@ export default async function FeedPage() {
     )
   }
 
-  const normalizedPosts: FeedPostRow[] = ((posts || []) as unknown as RawFeedPostRow[]).map(
-    (item) => {
-      const profile = item.profiles?.[0] ?? null
+  const normalizedPosts: FeedPostRow[] = ((posts || []) as FeedPostRow[]).map((item) => ({
+    id: item.id,
+    user_id: item.user_id,
+    user_full_name: item.user_full_name ?? null,
+    user_avatar_url: item.user_avatar_url ?? null,
+    user_is_vip: item.user_is_vip ?? null,
+    content: item.content ?? '',
+    image_url: item.image_url ?? null,
+    status: item.status,
+    report_count: Number(item.report_count || 0),
+    like_count: Number(item.like_count || 0),
+    comment_count: Number(item.comment_count || 0),
+    is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
+    created_at: item.created_at,
+  }))
 
-      return {
-        id: item.id,
-        user_id: item.user_id,
-        user_full_name: profile?.full_name ?? null,
-        user_avatar_url: profile?.avatar_url ?? null,
-        user_is_vip: profile?.is_vip ?? null,
-        content: item.content ?? '',
-        image_url: item.image_url ?? null,
-        status: item.status,
-        report_count: Number(item.report_count || 0),
-        like_count: Number(item.like_count || 0),
-        comment_count: Number(item.comment_count || 0),
-        is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
-        created_at: item.created_at,
-      }
-    }
+  return (
+    <FeedClient
+      currentUser={(me || null) as CurrentUserRow | null}
+      initialPosts={normalizedPosts}
+    />
   )
-
-  return <FeedClient currentUser={me} initialPosts={normalizedPosts} />
 }

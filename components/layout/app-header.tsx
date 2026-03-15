@@ -15,22 +15,22 @@ import GlobalNotificationsBadge from '@/components/notifications/global-notifica
 const navItems = [
   {
     href: '/feed',
-    label: 'Feed',
+    label: '',
     icon: Newspaper,
   },
   {
     href: '/discover',
-    label: 'Khám phá',
+    label: '',
     icon: Compass,
   },
   {
     href: '/connect',
-    label: 'Kết nối',
+    label: '',
     icon: HeartHandshake,
   },
   {
     href: '/profile',
-    label: 'Hồ sơ',
+    label: '',
     icon: UserRound,
   },
 ]
