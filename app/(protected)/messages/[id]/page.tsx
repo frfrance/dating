@@ -2,11 +2,13 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ChatThread from '@/components/messages/chat-thread'
 import ChatUserActions from '@/components/messages/chat-user-actions'
+import VipBadge from '@/components/profile/vip-badge'
 
 type OtherUserRow = {
   other_user_id: string
   other_user_full_name: string | null
   other_user_avatar_url: string | null
+  other_user_is_vip?: boolean | null
 }
 
 export default async function MessageThreadPage({
@@ -78,7 +80,10 @@ export default async function MessageThreadPage({
         />
 
         <div>
-          <div className="font-semibold text-gray-900">{displayName}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-semibold text-gray-900">{displayName}</div>
+            <VipBadge isVip={otherUser.other_user_is_vip} />
+          </div>
           <div className="text-sm text-gray-500">Cuộc trò chuyện riêng tư</div>
         </div>
       </div>

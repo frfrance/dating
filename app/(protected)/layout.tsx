@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import AppFooter from '@/components/layout/app-footer'
 import { createClient } from '@/lib/supabase/server'
 import AppHeader from '@/components/layout/app-header'
@@ -20,9 +21,21 @@ export default async function ProtectedLayout({
     redirect('/login')
   }
 
+  const headerStore = await headers()
+  const pathname =
+    headerStore.get('x-pathname') ||
+    headerStore.get('next-url') ||
+    ''
+
+  const isAdminRoute = pathname.startsWith('/admin')
+  const isOnboardingRoute = pathname === '/onboarding'
+
   const { data: profile } = await supabase
     .from('profiles')
     .select(`
+      id,
+      is_admin,
+      onboarding_completed,
       full_name,
       birth_date,
       gender,
@@ -43,21 +56,37 @@ export default async function ProtectedLayout({
     .eq('id', user.id)
     .maybeSingle()
 
-  const completion = profile
-    ? computeProfileCompletion(profile)
-    : { percentage: 0, remaining: 0 }
+  if (!profile) {
+    redirect('/login')
+  }
+
+  const isAdmin = !!profile.is_admin
+  const onboardingCompleted = !!profile.onboarding_completed
+
+  if (!isAdmin && !onboardingCompleted && !isOnboardingRoute) {
+    redirect('/onboarding')
+  }
+
+  if (isAdminRoute) {
+    return <>{children}</>
+  }
+
+  const completion = computeProfileCompletion(profile)
 
   return (
-  <div className="min-h-screen bg-[#fafafa]">
-    <AppHeader />
-    <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
-      <ProfileCompletionBanner
-        percentage={completion.percentage}
-        remaining={completion.remaining}
-      />
-      {children}
-    </main>
-    <AppFooter />
-  </div>
-)
+    <div className="min-h-screen bg-[#fafafa]">
+      <AppHeader />
+      <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
+        {onboardingCompleted ? (
+          <ProfileCompletionBanner
+            percentage={completion.percentage}
+            remaining={completion.remaining}
+          />
+        ) : null}
+
+        {children}
+      </main>
+      <AppFooter />
+    </div>
+  )
 }

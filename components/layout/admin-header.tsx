@@ -4,48 +4,42 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
-  Newspaper,
-  Compass,
-  HeartHandshake,
-  MessageCircle,
-  UserRound,
+  Users,
+  FileText,
+  AlertTriangle,
+  BadgeCheck,
 } from 'lucide-react'
 
-const navItems = [
+const adminItems = [
   {
-    href: '/feed',
-    label: 'Feed',
-    icon: Newspaper,
+    href: '/admin/users',
+    label: 'Người dùng',
+    icon: Users,
   },
   {
-    href: '/discover',
-    label: 'Khám phá',
-    icon: Compass,
+    href: '/admin/feed-posts',
+    label: 'Bài viết',
+    icon: FileText,
   },
   {
-    href: '/connect',
-    label: 'Kết nối',
-    icon: HeartHandshake,
+    href: '/admin/reports',
+    label: 'Báo cáo',
+    icon: AlertTriangle,
   },
   {
-    href: '/messages',
-    label: 'Tin nhắn',
-    icon: MessageCircle,
-  },
-  {
-    href: '/profile',
-    label: 'Hồ sơ',
-    icon: UserRound,
+    href: '/admin/vip-requests',
+    label: 'VIP',
+    icon: BadgeCheck,
   },
 ]
 
-export default function AppHeader() {
+export default function AdminHeader() {
   const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-pink-100 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
       <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/discover" className="shrink-0">
+        <Link href="/admin/users" className="shrink-0">
           <Image
             src="/favicon.ico"
             alt="Logo"
@@ -55,8 +49,8 @@ export default function AppHeader() {
           />
         </Link>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-2 md:flex">
-          {navItems.map((item) => {
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-2 lg:flex">
+          {adminItems.map((item) => {
             const Icon = item.icon
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -68,8 +62,8 @@ export default function AppHeader() {
                 className={[
                   'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition',
                   active
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'text-gray-700 hover:bg-pink-50 hover:text-pink-600',
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-100',
                 ].join(' ')}
               >
                 <Icon className="h-4 w-4" />
@@ -82,9 +76,9 @@ export default function AppHeader() {
         <div className="w-9" />
       </div>
 
-      <div className="border-t border-pink-50 bg-white md:hidden">
-        <div className="mx-auto grid max-w-7xl grid-cols-5 px-2 py-2">
-          {navItems.map((item) => {
+      <div className="border-t border-gray-100 bg-white lg:hidden">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-2 px-2 py-2">
+          {adminItems.map((item) => {
             const Icon = item.icon
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -96,8 +90,8 @@ export default function AppHeader() {
                 className={[
                   'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition',
                   active
-                    ? 'bg-pink-50 text-pink-600'
-                    : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600',
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:bg-gray-100',
                 ].join(' ')}
               >
                 <Icon className="h-4 w-4" />

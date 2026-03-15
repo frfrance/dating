@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -9,16 +9,20 @@ export default function GlobalUnreadBadge() {
   const supabase = createClient()
   const [unreadCount, setUnreadCount] = useState<number>(0)
 
-  async function loadUnreadCount() {
+  const loadUnreadCount = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_total_unread_messages')
 
     if (!error) {
       setUnreadCount(Number(data || 0))
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
-    loadUnreadCount()
+    const run = async () => {
+      await loadUnreadCount()
+    }
+
+    void run()
 
     const channel = supabase
       .channel('global-unread-messages')
@@ -38,7 +42,7 @@ export default function GlobalUnreadBadge() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [loadUnreadCount, supabase])
 
   return (
     <Link

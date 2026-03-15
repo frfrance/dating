@@ -3,12 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import VipBadge from '@/components/profile/vip-badge'
 
 type PendingIntro = {
   request_id: string
   initiator_id: string
   initiator_full_name: string | null
   initiator_avatar_url: string | null
+  initiator_is_vip?: boolean | null
   content: string
   created_at: string
 }
@@ -87,12 +89,21 @@ export default function PendingIntroRequests({
                       alt={displayName}
                       className="h-full w-full object-cover"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-pink-700">
+                      {displayName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-gray-900">{displayName}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="font-semibold text-gray-900">{displayName}</div>
+                    <VipBadge isVip={item.initiator_is_vip} />
+                  </div>
+
                   <div className="mt-1 text-sm text-gray-700">{item.content}</div>
+
                   <div className="mt-2 text-xs text-gray-400">
                     {new Date(item.created_at).toLocaleString()}
                   </div>

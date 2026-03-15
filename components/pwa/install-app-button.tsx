@@ -1,69 +1,74 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
-import IosInstallModal from "@/components/pwa/ios-install-modal";
+import { useEffect, useState } from 'react'
+import { Download } from 'lucide-react'
+import IosInstallModal from '@/components/pwa/ios-install-modal'
 
 type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
+  prompt: () => Promise<void>
   userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
-  }>;
-};
+    outcome: 'accepted' | 'dismissed'
+    platform: string
+  }>
+}
 
 type InstallAppButtonProps = {
-  className?: string;
-};
+  className?: string
+}
+
+function detectIos() {
+  if (typeof window === 'undefined') return false
+  const ua = window.navigator.userAgent.toLowerCase()
+  return (
+    /iphone|ipad|ipod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+}
+
+function detectStandalone() {
+  if (typeof window === 'undefined') return false
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
+}
 
 export default function InstallAppButton({
-  className = "",
+  className = '',
 }: InstallAppButtonProps) {
   const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isIos, setIsIos] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [showIosGuide, setShowIosGuide] = useState(false);
+    useState<BeforeInstallPromptEvent | null>(null)
+  const [isIos] = useState(() => detectIos())
+  const [isStandalone] = useState(() => detectStandalone())
+  const [showIosGuide, setShowIosGuide] = useState(false)
 
   useEffect(() => {
-    const ua = window.navigator.userAgent.toLowerCase();
-    const ios =
-      /iphone|ipad|ipod/.test(ua) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
-    setIsIos(ios);
-    setIsStandalone(standalone);
-
     const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
+      e.preventDefault()
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
+    }
 
-    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener('beforeinstallprompt', handler)
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-    };
-  }, []);
+      window.removeEventListener('beforeinstallprompt', handler)
+    }
+  }, [])
 
   async function handleInstall() {
     if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      setDeferredPrompt(null);
-      return;
+      await deferredPrompt.prompt()
+      await deferredPrompt.userChoice
+      setDeferredPrompt(null)
+      return
     }
 
     if (isIos && !isStandalone) {
-      setShowIosGuide(true);
+      setShowIosGuide(true)
     }
   }
 
-  if (isStandalone) return null;
+  if (isStandalone) return null
 
   return (
     <>
@@ -72,7 +77,7 @@ export default function InstallAppButton({
         onClick={handleInstall}
         className={
           className ||
-          "inline-flex items-center justify-center gap-2 rounded-2xl bg-pink-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600"
+          'inline-flex items-center justify-center gap-2 rounded-2xl bg-pink-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600'
         }
       >
         <Download className="h-4 w-4" />
@@ -84,5 +89,5 @@ export default function InstallAppButton({
         onClose={() => setShowIosGuide(false)}
       />
     </>
-  );
+  )
 }

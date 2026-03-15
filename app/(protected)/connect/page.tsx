@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { CalendarDays, Heart, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import VipBadge from '@/components/profile/vip-badge'
 
 type MatchRow = {
   match_id: string
@@ -12,6 +13,7 @@ type MatchRow = {
   other_user_city: string | null
   other_user_country: string | null
   other_user_avatar_url: string | null
+  other_user_is_vip?: boolean | null
   matched_at: string
 }
 
@@ -129,9 +131,12 @@ export default async function ConnectPage() {
 
                 <div className="space-y-4 p-5">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {displayName} {age ? `, ${age}` : ''}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        {displayName} {age ? `, ${age}` : ''}
+                      </h2>
+                      <VipBadge isVip={item.other_user_is_vip} />
+                    </div>
 
                     <div className="mt-3 space-y-2 text-sm text-gray-600">
                       <div className="flex items-center gap-2">

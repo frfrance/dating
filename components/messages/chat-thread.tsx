@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { formatGermanTime } from '@/lib/date-format'
 
 type Message = {
   id: string
@@ -42,7 +43,7 @@ export default function ChatThread({
   }, [messages])
 
   useEffect(() => {
-    markSeen()
+    void markSeen()
 
     const channel = supabase
       .channel(`messages-${conversationId}`)
@@ -71,7 +72,7 @@ export default function ChatThread({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [conversationId, currentUserId])
+  }, [conversationId, currentUserId, supabase])
 
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -141,12 +142,13 @@ export default function ChatThread({
               >
                 <div>{message.content}</div>
                 <div
+                  suppressHydrationWarning
                   className={[
                     'mt-1 text-[11px]',
                     isMine ? 'text-pink-100' : 'text-gray-400',
                   ].join(' ')}
                 >
-                  {new Date(message.created_at).toLocaleTimeString()}
+                  {formatGermanTime(message.created_at)}
                 </div>
               </div>
             </div>

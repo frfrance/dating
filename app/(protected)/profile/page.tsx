@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import StrangerMessageSettingsForm from '@/components/settings/stranger-message-settings-form'
 import AdvancedProfileDetailsView from '@/components/profile/advanced-profile-details-view'
+import VipBadge from '@/components/profile/vip-badge'
 
 type ProfilePhoto = {
   id: string
@@ -34,6 +35,7 @@ function getAgeFromBirthDate(birthDate: string | null) {
 }
 
 const profileLinks = [
+  { href: '/vip/apply', label: 'Đăng ký VIP' },
   { href: '/report-issue', label: 'Báo cáo sự cố' },
   { href: '/change-password', label: 'Đổi mật khẩu' },
   { href: '/privacy-policy', label: 'Chính sách bảo mật' },
@@ -76,6 +78,8 @@ export default async function ProfilePage() {
       allow_intro_messages,
       incoming_intro_limit_mode,
       incoming_intro_daily_limit,
+      is_vip,
+      is_verified_member,
       extra_profile_data
     `)
     .eq('id', user.id)
@@ -118,10 +122,14 @@ export default async function ProfilePage() {
           </div>
 
           <div className="mt-4 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {profile.full_name || 'Chưa cập nhật tên'}
-              {age ? `, ${age}` : ''}
-            </h1>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {profile.full_name || 'Chưa cập nhật tên'}
+                {age ? `, ${age}` : ''}
+              </h1>
+              <VipBadge isVip={profile.is_vip} />
+            </div>
+
             <p className="mt-1 text-sm text-gray-500">
               {profile.gender || 'Chưa cập nhật giới tính'}
             </p>

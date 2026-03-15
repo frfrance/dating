@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
-import DiscoverClient from '@/components/discover/discover-client'
+import DiscoverClient, {
+  type DiscoverProfile,
+} from '@/components/discover/discover-client'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function DiscoverPage() {
@@ -35,5 +37,5 @@ export default async function DiscoverPage() {
     )
   }
 
-  return <DiscoverClient initialProfiles={data || []} />
+  return <DiscoverClient initialProfiles={(data || []) as DiscoverProfile[]} />
 }

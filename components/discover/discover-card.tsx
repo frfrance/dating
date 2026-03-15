@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Heart, MessageCircle, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import IntroMessageModal from './intro-message-modal'
+import VipBadge from '@/components/profile/vip-badge'
 
 type Photo = {
   id: string
@@ -14,12 +15,13 @@ type Photo = {
 
 type DiscoverProfile = {
   id: string
-  full_name: string
+  full_name: string | null
   birth_date: string | null
   bio: string | null
   city: string | null
   country: string | null
   avatar_url: string | null
+  is_vip?: boolean | null
   photos: Photo[]
 }
 
@@ -59,6 +61,7 @@ export default function DiscoverCard({
   }, [profile])
 
   const age = getAge(profile.birth_date)
+  const displayName = profile.full_name?.trim() || 'Người dùng chưa cập nhật tên'
 
   function goPrev() {
     setCurrentIndex((prev) => (prev === 0 ? 0 : prev - 1))
@@ -99,10 +102,14 @@ export default function DiscoverCard({
           {gallery.length > 0 ? (
             <img
               src={gallery[currentIndex]}
-              alt={profile.full_name}
+              alt={displayName}
               className="h-full w-full object-cover"
             />
-          ) : null}
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-pink-100 text-4xl font-bold text-pink-700">
+              {displayName.slice(0, 1).toUpperCase()}
+            </div>
+          )}
 
           <div className="absolute left-0 right-0 top-0 flex gap-1 p-3">
             {gallery.map((_, index) => (
@@ -131,9 +138,14 @@ export default function DiscoverCard({
           />
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-white">
-            <h2 className="text-2xl font-bold">
-              {profile.full_name} {age ? `, ${age}` : ''}
-            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl font-bold">
+                {displayName}
+                {age ? `, ${age}` : ''}
+              </h2>
+              <VipBadge isVip={profile.is_vip} className="bg-white/90 text-pink-700" />
+            </div>
+
             <p className="mt-2 line-clamp-3 text-sm text-white/90">
               {profile.bio || 'Chưa có mô tả.'}
             </p>
@@ -187,7 +199,7 @@ export default function DiscoverCard({
 
       <IntroMessageModal
         targetUserId={profile.id}
-        targetUserName={profile.full_name}
+        targetUserName={displayName}
         open={introOpen}
         onClose={() => setIntroOpen(false)}
       />
