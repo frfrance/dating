@@ -10,6 +10,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import GlobalUnreadBadge from '@/components/messages/global-unread-badge'
+import GlobalNotificationsBadge from '@/components/notifications/global-notifications-badge'
 
 const navItems = [
   {
@@ -36,7 +37,12 @@ const navItems = [
 
 export default function AppHeader() {
   const pathname = usePathname()
-  const isMessagesActive = pathname === '/messages' || pathname.startsWith('/messages/')
+
+  const isMessagesActive =
+    pathname === '/messages' || pathname.startsWith('/messages/')
+
+  const isNotificationsActive =
+    pathname === '/notifications' || pathname.startsWith('/notifications/')
 
   return (
     <header className="sticky top-0 z-40 border-b border-pink-100 bg-white/95 backdrop-blur">
@@ -77,6 +83,15 @@ export default function AppHeader() {
           <div
             className={[
               'rounded-full transition',
+              isNotificationsActive ? 'bg-pink-500 text-white shadow-sm' : '',
+            ].join(' ')}
+          >
+            <GlobalNotificationsBadge />
+          </div>
+
+          <div
+            className={[
+              'rounded-full transition',
               isMessagesActive ? 'bg-pink-500 text-white shadow-sm' : '',
             ].join(' ')}
           >
@@ -88,7 +103,7 @@ export default function AppHeader() {
       </div>
 
       <div className="border-t border-pink-50 bg-white md:hidden">
-        <div className="mx-auto grid max-w-7xl grid-cols-5 px-2 py-2">
+        <div className="mx-auto grid max-w-7xl grid-cols-6 px-2 py-2">
           <Link
             href="/feed"
             className={[
@@ -128,7 +143,21 @@ export default function AppHeader() {
             <span>Kết nối</span>
           </Link>
 
-          <div className="flex items-center justify-center">
+          <div
+            className={[
+              'flex items-center justify-center rounded-2xl transition',
+              isNotificationsActive ? 'bg-pink-50 text-pink-600' : '',
+            ].join(' ')}
+          >
+            <GlobalNotificationsBadge />
+          </div>
+
+          <div
+            className={[
+              'flex items-center justify-center rounded-2xl transition',
+              isMessagesActive ? 'bg-pink-50 text-pink-600' : '',
+            ].join(' ')}
+          >
             <GlobalUnreadBadge />
           </div>
 
