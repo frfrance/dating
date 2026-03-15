@@ -15,22 +15,22 @@ import GlobalNotificationsBadge from '@/components/notifications/global-notifica
 const navItems = [
   {
     href: '/feed',
-    label: '',
+    label: 'Feed',
     icon: Newspaper,
   },
   {
     href: '/discover',
-    label: '',
+    label: 'Khám phá',
     icon: Compass,
   },
   {
     href: '/connect',
-    label: '',
+    label: 'Kết nối',
     icon: HeartHandshake,
   },
   {
     href: '/profile',
-    label: '',
+    label: 'Hồ sơ',
     icon: UserRound,
   },
 ]
@@ -67,15 +67,16 @@ export default function AppHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
+                title={item.label}
                 className={[
-                  'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition',
+                  'inline-flex h-11 w-11 items-center justify-center rounded-full transition',
                   active
                     ? 'bg-pink-500 text-white shadow-sm'
                     : 'text-gray-700 hover:bg-pink-50 hover:text-pink-600',
                 ].join(' ')}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-5 w-5" />
               </Link>
             )
           })}
@@ -86,7 +87,7 @@ export default function AppHeader() {
               isNotificationsActive ? 'bg-pink-500 text-white shadow-sm' : '',
             ].join(' ')}
           >
-            <GlobalNotificationsBadge />
+            <GlobalNotificationsBadge iconOnly />
           </div>
 
           <div
@@ -95,7 +96,7 @@ export default function AppHeader() {
               isMessagesActive ? 'bg-pink-500 text-white shadow-sm' : '',
             ].join(' ')}
           >
-            <GlobalUnreadBadge />
+            <GlobalUnreadBadge iconOnly />
           </div>
         </nav>
 
@@ -106,41 +107,44 @@ export default function AppHeader() {
         <div className="mx-auto grid max-w-7xl grid-cols-6 px-2 py-2">
           <Link
             href="/feed"
+            aria-label="Feed"
+            title="Feed"
             className={[
-              'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition',
+              'flex items-center justify-center rounded-2xl px-2 py-3 transition',
               pathname === '/feed' || pathname.startsWith('/feed/')
                 ? 'bg-pink-50 text-pink-600'
                 : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600',
             ].join(' ')}
           >
-            <Newspaper className="h-4 w-4" />
-            <span>Feed</span>
+            <Newspaper className="h-5 w-5" />
           </Link>
 
           <Link
             href="/discover"
+            aria-label="Khám phá"
+            title="Khám phá"
             className={[
-              'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition',
+              'flex items-center justify-center rounded-2xl px-2 py-3 transition',
               pathname === '/discover' || pathname.startsWith('/discover/')
                 ? 'bg-pink-50 text-pink-600'
                 : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600',
             ].join(' ')}
           >
-            <Compass className="h-4 w-4" />
-            <span>Khám phá</span>
+            <Compass className="h-5 w-5" />
           </Link>
 
           <Link
             href="/connect"
+            aria-label="Kết nối"
+            title="Kết nối"
             className={[
-              'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition',
+              'flex items-center justify-center rounded-2xl px-2 py-3 transition',
               pathname === '/connect' || pathname.startsWith('/connect/')
                 ? 'bg-pink-50 text-pink-600'
                 : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600',
             ].join(' ')}
           >
-            <HeartHandshake className="h-4 w-4" />
-            <span>Kết nối</span>
+            <HeartHandshake className="h-5 w-5" />
           </Link>
 
           <div
@@ -149,7 +153,7 @@ export default function AppHeader() {
               isNotificationsActive ? 'bg-pink-50 text-pink-600' : '',
             ].join(' ')}
           >
-            <GlobalNotificationsBadge />
+            <GlobalNotificationsBadge iconOnly />
           </div>
 
           <div
@@ -158,20 +162,21 @@ export default function AppHeader() {
               isMessagesActive ? 'bg-pink-50 text-pink-600' : '',
             ].join(' ')}
           >
-            <GlobalUnreadBadge />
+            <GlobalUnreadBadge iconOnly />
           </div>
 
           <Link
             href="/profile"
+            aria-label="Hồ sơ"
+            title="Hồ sơ"
             className={[
-              'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition',
+              'flex items-center justify-center rounded-2xl px-2 py-3 transition',
               pathname === '/profile' || pathname.startsWith('/profile/')
                 ? 'bg-pink-50 text-pink-600'
                 : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600',
             ].join(' ')}
           >
-            <UserRound className="h-4 w-4" />
-            <span>Hồ sơ</span>
+            <UserRound className="h-5 w-5" />
           </Link>
         </div>
       </div>

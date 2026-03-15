@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function GlobalUnreadBadge() {
+export default function GlobalUnreadBadge({
+  iconOnly = false,
+}: {
+  iconOnly?: boolean
+}) {
   const supabase = createClient()
   const [unreadCount, setUnreadCount] = useState<number>(0)
 
@@ -47,10 +51,17 @@ export default function GlobalUnreadBadge() {
   return (
     <Link
       href="/messages"
-      className="relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-pink-50 hover:text-pink-600"
+      aria-label="Tin nhắn"
+      title="Tin nhắn"
+      className={[
+        'relative inline-flex items-center justify-center rounded-full transition hover:bg-pink-50 hover:text-pink-600',
+        iconOnly
+          ? 'h-11 w-11 text-gray-700'
+          : 'gap-2 px-4 py-2 text-sm font-medium text-gray-700',
+      ].join(' ')}
     >
-      <MessageCircle className="h-4 w-4" />
-      <span>Tin nhắn</span>
+      <MessageCircle className="h-5 w-5" />
+      {!iconOnly ? <span>Tin nhắn</span> : null}
 
       {unreadCount > 0 ? (
         <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-pink-500 px-1.5 py-0.5 text-center text-xs font-semibold text-white">

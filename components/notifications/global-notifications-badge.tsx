@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function GlobalNotificationsBadge() {
+export default function GlobalNotificationsBadge({
+  iconOnly = false,
+}: {
+  iconOnly?: boolean
+}) {
   const supabase = createClient()
   const [count, setCount] = useState(0)
 
@@ -23,7 +27,7 @@ export default function GlobalNotificationsBadge() {
 
     void run()
 
-    const messagesChannel = supabase
+    const channel = supabase
       .channel('global-notifications-badge')
       .on(
         'postgres_changes',
@@ -42,17 +46,24 @@ export default function GlobalNotificationsBadge() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(messagesChannel)
+      supabase.removeChannel(channel)
     }
   }, [loadCount, supabase])
 
   return (
     <Link
       href="/notifications"
-      className="relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-pink-50 hover:text-pink-600"
+      aria-label="Thông báo"
+      title="Thông báo"
+      className={[
+        'relative inline-flex items-center justify-center rounded-full transition hover:bg-pink-50 hover:text-pink-600',
+        iconOnly
+          ? 'h-11 w-11 text-gray-700'
+          : 'gap-2 px-4 py-2 text-sm font-medium text-gray-700',
+      ].join(' ')}
     >
-      <Bell className="h-4 w-4" />
-      <span>Thông báo</span>
+      <Bell className="h-5 w-5" />
+      {!iconOnly ? <span>Thông báo</span> : null}
 
       {count > 0 ? (
         <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-pink-500 px-1.5 py-0.5 text-center text-xs font-semibold text-white">
