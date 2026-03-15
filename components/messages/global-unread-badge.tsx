@@ -47,7 +47,7 @@ export default function GlobalUnreadBadge() {
   return (
     <Link
       href="/messages"
-      className="relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+      className="relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-pink-50 hover:text-pink-600"
     >
       <MessageCircle className="h-4 w-4" />
       <span>Tin nhắn</span>
