@@ -18,10 +18,16 @@ export type FeedPostRow = {
   created_at: string
 }
 
+type RawFeedProfileRow = {
+  full_name: string | null
+  avatar_url: string | null
+  is_vip: boolean | null
+}
+
 type RawFeedPostRow = {
   id: string
   user_id: string
-  content: string
+  content: string | null
   image_url: string | null
   status: string
   report_count: number | null
@@ -29,13 +35,7 @@ type RawFeedPostRow = {
   comment_count: number | null
   is_hidden_by_admin: boolean | null
   created_at: string
-  profiles:
-    | {
-        full_name: string | null
-        avatar_url: string | null
-        is_vip: boolean | null
-      }
-    | null
+  profiles: RawFeedProfileRow[] | null
 }
 
 export default async function FeedPage() {
@@ -86,21 +86,27 @@ export default async function FeedPage() {
     )
   }
 
-  const normalizedPosts: FeedPostRow[] = ((posts || []) as RawFeedPostRow[]).map((item) => ({
-    id: item.id,
-    user_id: item.user_id,
-    user_full_name: item.profiles?.full_name ?? null,
-    user_avatar_url: item.profiles?.avatar_url ?? null,
-    user_is_vip: item.profiles?.is_vip ?? false,
-    content: item.content,
-    image_url: item.image_url,
-    status: item.status,
-    report_count: Number(item.report_count || 0),
-    like_count: Number(item.like_count || 0),
-    comment_count: Number(item.comment_count || 0),
-    is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
-    created_at: item.created_at,
-  }))
+  const normalizedPosts: FeedPostRow[] = ((posts || []) as unknown as RawFeedPostRow[]).map(
+    (item) => {
+      const profile = item.profiles?.[0] ?? null
+
+      return {
+        id: item.id,
+        user_id: item.user_id,
+        user_full_name: profile?.full_name ?? null,
+        user_avatar_url: profile?.avatar_url ?? null,
+        user_is_vip: profile?.is_vip ?? null,
+        content: item.content ?? '',
+        image_url: item.image_url ?? null,
+        status: item.status,
+        report_count: Number(item.report_count || 0),
+        like_count: Number(item.like_count || 0),
+        comment_count: Number(item.comment_count || 0),
+        is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
+        created_at: item.created_at,
+      }
+    }
+  )
 
   return <FeedClient currentUser={me} initialPosts={normalizedPosts} />
 }
