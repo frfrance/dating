@@ -28,6 +28,13 @@ export type VipUserRow = {
   created_at: string | null
 }
 
+type RawVipProfileRow = {
+  full_name: string | null
+  email: string | null
+  avatar_url: string | null
+  is_vip: boolean | null
+}
+
 type RawVipRequestRow = {
   id: string
   user_id: string
@@ -37,14 +44,7 @@ type RawVipRequestRow = {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   reviewed_at: string | null
-  profiles:
-    | {
-        full_name: string | null
-        email: string | null
-        avatar_url: string | null
-        is_vip: boolean | null
-      }
-    | null
+  profiles: RawVipProfileRow[] | null
 }
 
 export default async function AdminVipRequestsPage({
@@ -110,8 +110,12 @@ export default async function AdminVipRequestsPage({
     )
   }
 
-  const pendingRequests: VipRequestRow[] = ((rawPendingRequests || []) as RawVipRequestRow[]).map(
-    (item) => ({
+  const pendingRequests: VipRequestRow[] = (
+    (rawPendingRequests || []) as unknown as RawVipRequestRow[]
+  ).map((item) => {
+    const profile = item.profiles?.[0] ?? null
+
+    return {
       id: item.id,
       user_id: item.user_id,
       phone_number: item.phone_number,
@@ -120,12 +124,12 @@ export default async function AdminVipRequestsPage({
       status: item.status,
       created_at: item.created_at,
       reviewed_at: item.reviewed_at,
-      profile_full_name: item.profiles?.full_name ?? null,
-      profile_email: item.profiles?.email ?? null,
-      profile_avatar_url: item.profiles?.avatar_url ?? null,
-      profile_is_vip: item.profiles?.is_vip ?? null,
-    })
-  )
+      profile_full_name: profile?.full_name ?? null,
+      profile_email: profile?.email ?? null,
+      profile_avatar_url: profile?.avatar_url ?? null,
+      profile_is_vip: profile?.is_vip ?? null,
+    }
+  })
 
   const { count: vipCount, error: vipCountError } = await supabase
     .from('profiles')
