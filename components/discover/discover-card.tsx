@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import { Heart, MessageCircle, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import IntroMessageModal from './intro-message-modal'
@@ -13,7 +14,7 @@ type Photo = {
   sort_order: number
 }
 
-type DiscoverProfile = {
+export type DiscoverProfile = {
   id: string
   full_name: string | null
   birth_date: string | null
@@ -23,6 +24,7 @@ type DiscoverProfile = {
   avatar_url: string | null
   is_vip?: boolean | null
   photos: Photo[]
+  passed_at?: string | null
 }
 
 function getAge(birthDate: string | null) {
@@ -57,11 +59,18 @@ export default function DiscoverCard({
   const gallery = useMemo(() => {
     const extra = profile.photos?.map((p) => p.image_url) ?? []
     const all = [profile.avatar_url, ...extra].filter(Boolean) as string[]
-    return all.length > 0 ? all : []
+    return all
   }, [profile])
+
+  useEffect(() => {
+    setCurrentIndex(0)
+    setError('')
+    setIntroOpen(false)
+  }, [profile.id])
 
   const age = getAge(profile.birth_date)
   const displayName = profile.full_name?.trim() || 'Người dùng chưa cập nhật tên'
+  const locationText = [profile.city, profile.country].filter(Boolean).join(', ')
 
   function goPrev() {
     setCurrentIndex((prev) => (prev === 0 ? 0 : prev - 1))
@@ -87,7 +96,12 @@ export default function DiscoverCard({
       }
 
       const result = Array.isArray(data) ? data[0] : null
-      onRemoved(profile.id, !!result?.matched, result?.conversation_id ?? null)
+
+      onRemoved(
+        profile.id,
+        Boolean(result?.matched),
+        result?.out_conversation_id ?? result?.conversation_id ?? null
+      )
     } catch {
       setError('Đã có lỗi xảy ra.')
     } finally {
@@ -100,10 +114,13 @@ export default function DiscoverCard({
       <div className="mx-auto w-full max-w-md overflow-hidden rounded-[32px] border border-gray-200 bg-white shadow-xl">
         <div className="relative aspect-[4/5] bg-gray-100">
           {gallery.length > 0 ? (
-            <img
+            <Image
               src={gallery[currentIndex]}
               alt={displayName}
-              className="h-full w-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 448px"
+              className="object-cover"
+              priority
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-pink-100 text-4xl font-bold text-pink-700">
@@ -111,31 +128,37 @@ export default function DiscoverCard({
             </div>
           )}
 
-          <div className="absolute left-0 right-0 top-0 flex gap-1 p-3">
-            {gallery.map((_, index) => (
-              <div
-                key={index}
-                className={[
-                  'h-1 flex-1 rounded-full',
-                  index === currentIndex ? 'bg-white' : 'bg-white/40',
-                ].join(' ')}
+          {gallery.length > 1 ? (
+            <div className="absolute left-0 right-0 top-0 flex gap-1 p-3">
+              {gallery.map((_, index) => (
+                <div
+                  key={index}
+                  className={[
+                    'h-1 flex-1 rounded-full',
+                    index === currentIndex ? 'bg-white' : 'bg-white/40',
+                  ].join(' ')}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {gallery.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={goPrev}
+                className="absolute left-0 top-0 h-full w-1/2"
+                aria-label="Ảnh trước"
               />
-            ))}
-          </div>
 
-          <button
-            type="button"
-            onClick={goPrev}
-            className="absolute left-0 top-0 h-full w-1/2"
-            aria-label="Ảnh trước"
-          />
-
-          <button
-            type="button"
-            onClick={goNext}
-            className="absolute right-0 top-0 h-full w-1/2"
-            aria-label="Ảnh tiếp theo"
-          />
+              <button
+                type="button"
+                onClick={goNext}
+                className="absolute right-0 top-0 h-full w-1/2"
+                aria-label="Ảnh tiếp theo"
+              />
+            </>
+          ) : null}
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-white">
             <div className="flex flex-wrap items-center gap-2">
@@ -145,6 +168,10 @@ export default function DiscoverCard({
               </h2>
               <VipBadge isVip={profile.is_vip} className="bg-white/90 text-pink-700" />
             </div>
+
+            {locationText ? (
+              <p className="mt-1 text-sm text-white/90">{locationText}</p>
+            ) : null}
 
             <p className="mt-2 line-clamp-3 text-sm text-white/90">
               {profile.bio || 'Chưa có mô tả.'}
@@ -164,7 +191,7 @@ export default function DiscoverCard({
               type="button"
               disabled={loading}
               onClick={() => handleSwipe('pass')}
-              className="flex items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-700 hover:bg-gray-50"
+              className="flex items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-3 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               <X className="h-5 w-5" />
             </button>
@@ -180,7 +207,7 @@ export default function DiscoverCard({
               type="button"
               disabled={loading}
               onClick={() => handleSwipe('like')}
-              className="flex items-center justify-center rounded-2xl bg-pink-500 px-4 py-3 text-white hover:bg-pink-600"
+              className="flex items-center justify-center rounded-2xl bg-pink-500 px-4 py-3 text-white hover:bg-pink-600 disabled:opacity-60"
             >
               <Heart className="h-5 w-5" />
             </button>

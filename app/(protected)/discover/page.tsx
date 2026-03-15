@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
-import DiscoverClient, {
-  type DiscoverProfile,
-} from '@/components/discover/discover-client'
+import DiscoverClient from '@/components/discover/discover-client'
+import { type DiscoverProfile } from '@/components/discover/discover-card'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function DiscoverPage() {
@@ -17,7 +16,7 @@ export default async function DiscoverPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('onboarding_completed')
+    .select('onboarding_completed, is_vip')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -37,5 +36,10 @@ export default async function DiscoverPage() {
     )
   }
 
-  return <DiscoverClient initialProfiles={(data || []) as DiscoverProfile[]} />
+  return (
+    <DiscoverClient
+      initialProfiles={(data || []) as DiscoverProfile[]}
+      currentUserIsVip={Boolean(profile?.is_vip)}
+    />
+  )
 }
