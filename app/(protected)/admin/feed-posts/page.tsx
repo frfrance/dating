@@ -8,13 +8,29 @@ type AdminFeedPostRow = {
   user_full_name: string | null
   user_avatar_url: string | null
   user_is_vip: boolean | null
-  content: string | null
+  content: string
   image_url: string | null
   like_count: number
   comment_count: number
   report_count: number
   status: 'approved' | 'hidden' | 'pending_review'
   is_hidden_by_admin: boolean
+  created_at: string
+}
+
+type RawAdminFeedPostRow = {
+  id: string
+  user_id: string
+  user_full_name: string | null
+  user_avatar_url: string | null
+  user_is_vip: boolean | null
+  content: string | null
+  image_url: string | null
+  like_count: number | null
+  comment_count: number | null
+  report_count: number | null
+  status: 'approved' | 'hidden' | 'pending_review'
+  is_hidden_by_admin: boolean | null
   created_at: string
 }
 
@@ -49,6 +65,24 @@ export default async function AdminFeedPostsPage() {
     )
   }
 
+  const normalizedPosts: AdminFeedPostRow[] = ((data || []) as RawAdminFeedPostRow[]).map(
+    (item) => ({
+      id: item.id,
+      user_id: item.user_id,
+      user_full_name: item.user_full_name ?? null,
+      user_avatar_url: item.user_avatar_url ?? null,
+      user_is_vip: item.user_is_vip ?? null,
+      content: item.content ?? '',
+      image_url: item.image_url ?? null,
+      like_count: Number(item.like_count || 0),
+      comment_count: Number(item.comment_count || 0),
+      report_count: Number(item.report_count || 0),
+      status: item.status,
+      is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
+      created_at: item.created_at,
+    })
+  )
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
       <div className="mb-5">
@@ -58,7 +92,7 @@ export default async function AdminFeedPostsPage() {
         </p>
       </div>
 
-      <AdminFeedPostsTable posts={(data || []) as AdminFeedPostRow[]} />
+      <AdminFeedPostsTable posts={normalizedPosts} />
     </main>
   )
 }
