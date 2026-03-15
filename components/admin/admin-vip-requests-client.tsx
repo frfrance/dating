@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Search, CheckCircle2, XCircle, Crown, User } from 'lucide-react'
@@ -10,10 +10,7 @@ import type {
 } from '@/app/(protected)/admin/vip-requests/page'
 import { formatGermanDateTime } from '@/lib/date-format'
 
-function buildPageHref(
-  vipPage: number,
-  nonVipPage: number
-) {
+function buildPageHref(vipPage: number, nonVipPage: number) {
   const params = new URLSearchParams()
   params.set('vipPage', String(vipPage))
   params.set('nonVipPage', String(nonVipPage))
@@ -46,13 +43,18 @@ export default function AdminVipRequestsClient({
   const supabase = createClient()
 
   const [pendingRequests, setPendingRequests] = useState(initialPendingRequests)
-  const [vipUsers] = useState(initialVipUsers)
-  const [nonVipUsers] = useState(initialNonVipUsers)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [searchVip, setSearchVip] = useState('')
   const [searchNonVip, setSearchNonVip] = useState('')
+
+  useEffect(() => {
+    setPendingRequests(initialPendingRequests)
+  }, [initialPendingRequests])
+
+  const vipUsers = initialVipUsers
+  const nonVipUsers = initialNonVipUsers
 
   async function handleApprove(requestId: string) {
     try {
@@ -101,6 +103,7 @@ export default function AdminVipRequestsClient({
   const filteredVipUsers = useMemo(() => {
     const keyword = searchVip.trim().toLowerCase()
     if (!keyword) return vipUsers
+
     return vipUsers.filter((item) => {
       const name = (item.full_name || '').toLowerCase()
       const email = (item.email || '').toLowerCase()
@@ -111,6 +114,7 @@ export default function AdminVipRequestsClient({
   const filteredNonVipUsers = useMemo(() => {
     const keyword = searchNonVip.trim().toLowerCase()
     if (!keyword) return nonVipUsers
+
     return nonVipUsers.filter((item) => {
       const name = (item.full_name || '').toLowerCase()
       const email = (item.email || '').toLowerCase()
@@ -283,7 +287,8 @@ export default function AdminVipRequestsClient({
         </div>
 
         <div className="mb-2 text-sm text-gray-500">
-          Đang xem {vipVisibleFrom} - {vipVisibleTo} trên tổng {totalVipUsers} người · Trang {currentVipPage}/{totalVipPages}
+          Đang xem {vipVisibleFrom} - {vipVisibleTo} trên tổng {totalVipUsers} người · Trang{' '}
+          {currentVipPage}/{totalVipPages}
         </div>
 
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-4">
@@ -305,6 +310,7 @@ export default function AdminVipRequestsClient({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredVipUsers.map((item) => {
               const displayName = item.full_name || 'Người dùng'
+
               return (
                 <div
                   key={item.id}
@@ -383,7 +389,8 @@ export default function AdminVipRequestsClient({
         </div>
 
         <div className="mb-2 text-sm text-gray-500">
-          Đang xem {nonVipVisibleFrom} - {nonVipVisibleTo} trên tổng {totalNonVipUsers} người · Trang {currentNonVipPage}/{totalNonVipPages}
+          Đang xem {nonVipVisibleFrom} - {nonVipVisibleTo} trên tổng {totalNonVipUsers} người ·
+          Trang {currentNonVipPage}/{totalNonVipPages}
         </div>
 
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-4">
@@ -405,6 +412,7 @@ export default function AdminVipRequestsClient({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredNonVipUsers.map((item) => {
               const displayName = item.full_name || 'Người dùng'
+
               return (
                 <div
                   key={item.id}

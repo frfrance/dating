@@ -45,7 +45,17 @@ type RawCommentRow = {
   user_id: string
   content: string
   created_at: string
-  profiles: CommentProfile[] | null
+  profiles: CommentProfile | CommentProfile[] | null
+}
+
+function normalizeCommentProfile(
+  value: CommentProfile | CommentProfile[] | null | undefined
+): CommentProfile | null {
+  if (!value) return null
+  if (Array.isArray(value)) {
+    return value[0] ?? null
+  }
+  return value
 }
 
 export default function FeedPostCard({
@@ -95,20 +105,24 @@ export default function FeedPostCard({
       return
     }
 
-    const mappedComments: CommentRow[] = ((data || []) as RawCommentRow[]).map((item) => ({
-      id: item.id,
-      post_id: item.post_id,
-      user_id: item.user_id,
-      content: item.content,
-      created_at: item.created_at,
-      profiles: item.profiles?.[0]
-        ? {
-            full_name: item.profiles[0].full_name,
-            avatar_url: item.profiles[0].avatar_url,
-            is_vip: item.profiles[0].is_vip,
-          }
-        : null,
-    }))
+    const mappedComments: CommentRow[] = ((data || []) as RawCommentRow[]).map((item) => {
+      const profile = normalizeCommentProfile(item.profiles)
+
+      return {
+        id: item.id,
+        post_id: item.post_id,
+        user_id: item.user_id,
+        content: item.content,
+        created_at: item.created_at,
+        profiles: profile
+          ? {
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url,
+              is_vip: profile.is_vip,
+            }
+          : null,
+      }
+    })
 
     setComments(mappedComments)
   }

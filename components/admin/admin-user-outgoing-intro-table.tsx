@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Search } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type UserRow = {
@@ -26,18 +27,22 @@ export default function AdminUserOutgoingIntroTable({
   totalPages,
   totalUsers,
   pageSize,
+  initialSearch,
 }: {
   users: UserRow[]
   currentPage: number
   totalPages: number
   totalUsers: number
   pageSize: number
+  initialSearch: string
 }) {
   const supabase = createClient()
+  const router = useRouter()
+
   const [rows, setRows] = useState(users)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(initialSearch)
 
   function updateRow(id: string, patch: Partial<UserRow>) {
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -98,17 +103,23 @@ export default function AdminUserOutgoingIntroTable({
     }
   }
 
-  const filteredRows = useMemo(() => {
-    const keyword = search.trim().toLowerCase()
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
 
-    if (!keyword) return rows
+    const keyword = search.trim()
 
-    return rows.filter((row) => {
-      const name = (row.full_name || '').toLowerCase()
-      const email = (row.email || '').toLowerCase()
-      return name.includes(keyword) || email.includes(keyword)
-    })
-  }, [rows, search])
+    if (keyword) {
+      router.push(`/admin/users?page=1&q=${encodeURIComponent(keyword)}`)
+      return
+    }
+
+    router.push('/admin/users?page=1')
+  }
+
+  function handleClearSearch() {
+    setSearch('')
+    router.push('/admin/users?page=1')
+  }
 
   const visibleFrom = totalUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const visibleTo = Math.min(currentPage * pageSize, totalUsers)
@@ -129,18 +140,38 @@ export default function AdminUserOutgoingIntroTable({
 
         <div className="w-full md:max-w-sm">
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Tìm kiếm trong trang hiện tại
+            Tìm kiếm toàn bộ người dùng
           </label>
-          <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-4">
-            <Search className="h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nhập tên hoặc email..."
-              className="h-12 w-full bg-transparent text-black outline-none placeholder:text-gray-400"
-            />
-          </div>
+
+          <form onSubmit={handleSearchSubmit}>
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-4">
+              <Search className="h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nhập tên hoặc email..."
+                className="h-12 w-full bg-transparent text-black outline-none placeholder:text-gray-400"
+              />
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <button
+                type="submit"
+                className="rounded-2xl bg-pink-500 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-600"
+              >
+                Tìm kiếm
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Xóa lọc
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -155,13 +186,13 @@ export default function AdminUserOutgoingIntroTable({
       ) : null}
 
       <div className="mt-6 space-y-4">
-        {filteredRows.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
-            Không tìm thấy người dùng phù hợp trong trang hiện tại.
+            Không tìm thấy người dùng phù hợp.
           </div>
         ) : null}
 
-        {filteredRows.map((row) => (
+        {rows.map((row) => (
           <div
             key={row.id}
             className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm"
