@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Script from 'next/script'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
@@ -36,7 +37,6 @@ export default function RootLayout({
               src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
               strategy="afterInteractive"
             />
-
             <Script id="google-analytics-consent-default" strategy="afterInteractive">
               {`
                 window.dataLayer = window.dataLayer || [];
@@ -60,8 +60,14 @@ export default function RootLayout({
       </head>
 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {gaId ? <GoogleAnalyticsTracker /> : null}
+        {gaId ? (
+          <Suspense fallback={null}>
+            <GoogleAnalyticsTracker />
+          </Suspense>
+        ) : null}
+
         {children}
+
         {gaId ? <CookieConsentBanner /> : null}
       </body>
     </html>
