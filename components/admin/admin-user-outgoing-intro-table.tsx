@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -43,6 +43,14 @@ export default function AdminUserOutgoingIntroTable({
   const [savingId, setSavingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState(initialSearch)
+
+  useEffect(() => {
+    setRows(users)
+  }, [users])
+
+  useEffect(() => {
+    setSearch(initialSearch)
+  }, [initialSearch])
 
   function updateRow(id: string, patch: Partial<UserRow>) {
     setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))

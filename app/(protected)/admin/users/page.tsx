@@ -19,9 +19,6 @@ export default async function AdminUsersPage({
   const pageParam = Number(resolvedSearchParams.page || '1')
   const currentPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
 
-  const from = (currentPage - 1) * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -45,9 +42,7 @@ export default async function AdminUsersPage({
     .select('*', { count: 'exact', head: true })
 
   if (keyword) {
-    countQuery = countQuery.or(
-      `full_name.ilike.%${keyword}%,email.ilike.%${keyword}%`
-    )
+    countQuery = countQuery.or(`full_name.ilike.%${keyword}%,email.ilike.%${keyword}%`)
   }
 
   const { count, error: countError } = await countQuery
@@ -84,9 +79,7 @@ export default async function AdminUsersPage({
     .range(safeFrom, safeTo)
 
   if (keyword) {
-    usersQuery = usersQuery.or(
-      `full_name.ilike.%${keyword}%,email.ilike.%${keyword}%`
-    )
+    usersQuery = usersQuery.or(`full_name.ilike.%${keyword}%,email.ilike.%${keyword}%`)
   }
 
   const { data: users, error } = await usersQuery
@@ -98,10 +91,13 @@ export default async function AdminUsersPage({
   const prevPage = safeCurrentPage > 1 ? safeCurrentPage - 1 : null
   const nextPage = safeCurrentPage < totalPages ? safeCurrentPage + 1 : null
 
-  const pageHref = (page: number) =>
-    keyword
-      ? `/admin/users?page=${page}&q=${encodeURIComponent(keyword)}`
-      : `/admin/users?page=${page}`
+  const pageHref = (page: number) => {
+    if (keyword) {
+      return `/admin/users?page=${page}&q=${encodeURIComponent(keyword)}`
+    }
+
+    return `/admin/users?page=${page}`
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
@@ -120,7 +116,8 @@ export default async function AdminUsersPage({
           <strong>{totalUsers}</strong> người dùng
           {keyword ? (
             <>
-              {' '}· Kết quả cho <strong>"{keyword}"</strong>
+              {' '}
+              · Kết quả cho <strong>&quot;{keyword}&quot;</strong>
             </>
           ) : null}
         </div>
