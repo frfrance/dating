@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminFeedPostsTable from '@/components/admin/admin-feed-posts-table'
@@ -34,6 +35,14 @@ type RawAdminFeedPostRow = {
   created_at: string
 }
 
+function AdminFeedPostsFallback() {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm">
+      Đang tải danh sách bài viết feed...
+    </div>
+  )
+}
+
 export default async function AdminFeedPostsPage() {
   const supabase = await createClient()
 
@@ -65,23 +74,23 @@ export default async function AdminFeedPostsPage() {
     )
   }
 
-  const normalizedPosts: AdminFeedPostRow[] = ((data || []) as RawAdminFeedPostRow[]).map(
-    (item) => ({
-      id: item.id,
-      user_id: item.user_id,
-      user_full_name: item.user_full_name ?? null,
-      user_avatar_url: item.user_avatar_url ?? null,
-      user_is_vip: item.user_is_vip ?? null,
-      content: item.content ?? '',
-      image_url: item.image_url ?? null,
-      like_count: Number(item.like_count || 0),
-      comment_count: Number(item.comment_count || 0),
-      report_count: Number(item.report_count || 0),
-      status: item.status,
-      is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
-      created_at: item.created_at,
-    })
-  )
+  const normalizedPosts: AdminFeedPostRow[] = (
+    (data || []) as RawAdminFeedPostRow[]
+  ).map((item) => ({
+    id: item.id,
+    user_id: item.user_id,
+    user_full_name: item.user_full_name ?? null,
+    user_avatar_url: item.user_avatar_url ?? null,
+    user_is_vip: item.user_is_vip ?? null,
+    content: item.content ?? '',
+    image_url: item.image_url ?? null,
+    like_count: Number(item.like_count || 0),
+    comment_count: Number(item.comment_count || 0),
+    report_count: Number(item.report_count || 0),
+    status: item.status,
+    is_hidden_by_admin: Boolean(item.is_hidden_by_admin),
+    created_at: item.created_at,
+  }))
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
@@ -92,7 +101,9 @@ export default async function AdminFeedPostsPage() {
         </p>
       </div>
 
-      <AdminFeedPostsTable posts={normalizedPosts} />
+      <Suspense fallback={<AdminFeedPostsFallback />}>
+        <AdminFeedPostsTable posts={normalizedPosts} />
+      </Suspense>
     </main>
   )
 }

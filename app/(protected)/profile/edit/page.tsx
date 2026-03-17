@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import OnboardingForm from '@/components/onboarding/onboarding-form'
@@ -9,6 +10,18 @@ type GalleryPhotoItem = {
   image_url: string
   storage_path: string | null
   sort_order: number
+}
+
+function EditProfileSectionFallback({
+  title,
+}: {
+  title: string
+}) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm">
+      Đang tải {title.toLowerCase()}...
+    </div>
+  )
 }
 
 export default async function EditProfilePage() {
@@ -93,15 +106,21 @@ export default async function EditProfilePage() {
           </p>
         </div>
 
-        <OnboardingForm profile={profile} mode="edit" />
+        <Suspense fallback={<EditProfileSectionFallback title="Thông tin cơ bản" />}>
+          <OnboardingForm profile={profile} mode="edit" />
+        </Suspense>
       </div>
 
-      <ProfileGalleryEditor userId={user.id} initialPhotos={safePhotos} />
+      <Suspense fallback={<EditProfileSectionFallback title="Thư viện ảnh" />}>
+        <ProfileGalleryEditor userId={user.id} initialPhotos={safePhotos} />
+      </Suspense>
 
-      <AdvancedProfileDetailsForm
-        profileId={user.id}
-        initialData={profile.extra_profile_data}
-      />
+      <Suspense fallback={<EditProfileSectionFallback title="Thông tin nâng cao" />}>
+        <AdvancedProfileDetailsForm
+          profileId={user.id}
+          initialData={profile.extra_profile_data}
+        />
+      </Suspense>
     </div>
   )
 }
