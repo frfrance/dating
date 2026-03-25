@@ -51,14 +51,15 @@ export default function LoginForm() {
     try {
       setGoogleLoading(true)
 
-      const origin = window.location.origin
+      const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${origin}/auth/callback?next=/discover`,
-        },
-      })
+const { error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: `${siteUrl}/auth/callback?next=/discover`,
+  },
+})
 
       if (error) {
         setError(error.message)
