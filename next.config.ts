@@ -6,15 +6,23 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'qmgvugvwmcfppuoetcrc.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
         hostname: '**.cdninstagram.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: '**.fbcdn.net',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: '**.instagram.com',
+        pathname: '/**',
       },
     ],
   },
